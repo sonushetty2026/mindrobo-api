@@ -1,6 +1,15 @@
 """Alembic env.py — async PostgreSQL migrations for MindRobo."""
 
 import asyncio
+import sys
+import os
+
+# Add project root to path so 'app' module is importable when running alembic
+# from any working directory
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
 from logging.config import fileConfig
 
 from sqlalchemy import pool
