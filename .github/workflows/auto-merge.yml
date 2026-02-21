@@ -1,0 +1,53 @@
+name: Auto-merge agent PRs
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    # Only auto-merge PRs opened by the repo owner (Nova acts as sonushetty2026)
+    if: github.event.pull_request.user.login == 'sonushetty2026'
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Wait 10 minutes before merging
+        run: sleep 600
+
+      - name: Check PR is still open and mergeable
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+            });
+            console.log('State:', pr.data.state);
+            console.log('Mergeable:', pr.data.mergeable);
+            console.log('Mergeable state:', pr.data.mergeable_state);
+            if (pr.data.state !== 'open') {
+              core.setOutput('should_merge', 'false');
+            } else if (pr.data.mergeable === false) {
+              core.setOutput('should_merge', 'false');
+              core.setFailed('PR has conflicts — needs manual review');
+            } else {
+              core.setOutput('should_merge', 'true');
+            }
+
+      - name: Merge PR
+        if: steps.check.outputs.should_merge == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              merge_method: 'squash',
+              commit_title: context.payload.pull_request.title + ' (#' + context.payload.pull_request.number + ')',
+            });
+            console.log('PR merged successfully');
