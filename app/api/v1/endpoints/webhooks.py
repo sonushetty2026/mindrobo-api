@@ -11,7 +11,9 @@ from fastapi import APIRouter, Request, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.models.call import Call
+from app.models.business import Business
 from app.services.sms import send_caller_confirmation, send_owner_summary
+from app.api.v1.endpoints.dashboard import broadcast
 import logging
 
 router = APIRouter()
@@ -84,13 +86,23 @@ async def retell_webhook(request: Request, db: AsyncSession = Depends(get_db)):
             # Send SMS notifications (fire-and-forget, don't fail the webhook)
             try:
                 if caller_phone:
-                    await send_caller_confirmation(caller_phone)
+                    await send_caller_confirmation(caller_phone, business_name or "our team")
             except Exception as e:
                 logger.error("SMS to caller failed: %s", e)
 
-            # TODO: look up owner phone from business config table
-            # For now, owner_phone must be passed via call metadata or env
-            owner_phone = call_data.get("metadata", {}).get("owner_phone", "")
+            # Look up owner phone from business config
+            owner_phone = ""
+            business_name = ""
+            agent_id = call_data.get("agent_id", "")
+            if agent_id:
+                from sqlalchemy import select as sa_select
+                biz_result = await db.execute(
+                    sa_select(Business).where(Business.retell_agent_id == agent_id)
+                )
+                biz = biz_result.scalar_one_or_none()
+                if biz:
+                    owner_phone = biz.owner_phone
+                    business_name = biz.name
             if owner_phone:
                 try:
                     await send_owner_summary(
@@ -103,6 +115,22 @@ async def retell_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                     )
                 except Exception as e:
                     logger.error("SMS to owner failed: %s", e)
+
+            # Broadcast to dashboard WebSocket clients
+            try:
+                await broadcast({
+                    "event": "new_call",
+                    "call_id": call_id,
+                    "caller_phone": caller_phone,
+                    "status": "completed",
+                    "outcome": outcome,
+                    "lead_name": lead.get("lead_name"),
+                    "service_type": lead.get("service_type"),
+                    "urgency": lead.get("urgency"),
+                    "summary": lead.get("summary"),
+                })
+            except Exception as e:
+                logger.error("WebSocket broadcast failed: %s", e)
 
             return {"status": "ok", "call_id": call_id, "outcome": outcome}
 
