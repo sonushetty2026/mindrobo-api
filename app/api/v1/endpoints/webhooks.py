@@ -83,13 +83,6 @@ async def retell_webhook(request: Request, db: AsyncSession = Depends(get_db)):
             await db.refresh(call)
             logger.info("Call saved: %s → %s", call_id, outcome)
 
-            # Send SMS notifications (fire-and-forget, don't fail the webhook)
-            try:
-                if caller_phone:
-                    await send_caller_confirmation(caller_phone, business_name or "our team")
-            except Exception as e:
-                logger.error("SMS to caller failed: %s", e)
-
             # Look up owner phone from business config
             owner_phone = ""
             business_name = ""
@@ -103,6 +96,14 @@ async def retell_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                 if biz:
                     owner_phone = biz.owner_phone
                     business_name = biz.name
+
+            # Send SMS notifications (fire-and-forget, don't fail the webhook)
+            try:
+                if caller_phone:
+                    await send_caller_confirmation(caller_phone, business_name or "our team")
+            except Exception as e:
+                logger.error("SMS to caller failed: %s", e)
+
             if owner_phone:
                 try:
                     await send_owner_summary(
