@@ -19,3 +19,4 @@ redis==5.0.8
 pytest==8.3.3
 pytest-asyncio==0.24.0
 pytest-httpx==0.30.0
+aiosqlite==0.20.0
