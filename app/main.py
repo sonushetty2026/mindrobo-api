@@ -21,3 +21,9 @@ app.include_router(api_router, prefix="/api/v1")
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "mindrobo-api", "version": "0.1.0"}
+
+
+@app.get("/dashboard")
+async def dashboard_redirect():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/api/v1/dashboard/")
