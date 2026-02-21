@@ -1,4 +1,7 @@
-"""Shared test fixtures — uses SQLite in-memory for fast isolated tests."""
+"""Shared test fixtures for MindRobo API tests.
+
+Uses an in-memory SQLite async engine so tests run without PostgreSQL.
+"""
 
 import asyncio
 import pytest
@@ -10,18 +13,12 @@ from sqlalchemy.orm import sessionmaker
 from app.core.database import Base, get_db
 from app.main import app
 
-# Use SQLite async for tests (no Postgres dependency)
-TEST_DB_URL = "sqlite+aiosqlite:///file::memory:?cache=shared&uri=true"
 
-engine = create_async_engine(TEST_DB_URL, echo=False)
+# Use aiosqlite for fast, isolated tests
+TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+
+engine = create_async_engine(TEST_DATABASE_URL, echo=False)
 TestSession = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-
-@pytest.fixture(scope="session")
-def event_loop():
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
 
 
 @pytest_asyncio.fixture(autouse=True)
@@ -34,21 +31,24 @@ async def setup_db():
         await conn.run_sync(Base.metadata.drop_all)
 
 
-@pytest_asyncio.fixture
-async def db_session():
+async def override_get_db():
     async with TestSession() as session:
         yield session
 
 
+app.dependency_overrides[get_db] = override_get_db
+
+
 @pytest_asyncio.fixture
 async def client():
-    """Async test client with DB override."""
-    async def _override_get_db():
-        async with TestSession() as session:
-            yield session
-
-    app.dependency_overrides[get_db] = _override_get_db
+    """Async HTTP test client."""
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
-    app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+async def db():
+    """Direct DB session for test setup/assertions."""
+    async with TestSession() as session:
+        yield session
