@@ -1,0 +1,15 @@
+[Unit]
+Description=MindRobo API (FastAPI + Uvicorn)
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=azureuser
+WorkingDirectory=/home/azureuser/mindrobo-api
+EnvironmentFile=/home/azureuser/secrets/db.env
+ExecStart=/home/azureuser/mindrobo-api/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
