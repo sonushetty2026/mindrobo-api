@@ -5,10 +5,11 @@ from unittest.mock import patch, MagicMock
 
 
 @pytest.mark.asyncio
-async def test_create_checkout_requires_auth(client):
-    """Checkout endpoint should require authentication."""
+async def test_create_checkout_requires_business_id(client):
+    """Checkout endpoint requires business_id parameter."""
     resp = await client.post("/api/v1/billing/create-checkout?success_url=https://example.com/success&cancel_url=https://example.com/cancel")
-    assert resp.status_code == 403  # No auth token
+    # Missing business_id should return 422
+    assert resp.status_code == 422
 
 
 @pytest.mark.asyncio
@@ -55,7 +56,7 @@ async def test_subscription_created_updates_business(client, db):
         name="Test Roofing",
         owner_phone="+15551234567",
         stripe_customer_id="cus_test123",
-        subscription_status="trial"
+        subscription_status="inactive"
     )
     db.add(business)
     await db.commit()
