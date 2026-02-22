@@ -7,8 +7,11 @@ import logging
 
 from fastapi import APIRouter, Request, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, desc
 
 from app.core.database import get_db
+from app.models.call import Call
+from app.models.business import Business
 from app.services.calls import (
     extract_lead_data,
     lookup_business,
@@ -16,6 +19,7 @@ from app.services.calls import (
     update_call_with_analysis,
     send_notifications,
 )
+from app.services.sms import _send_sms
 from app.api.v1.endpoints.dashboard import broadcast
 
 router = APIRouter()
@@ -88,10 +92,77 @@ async def _handle_call_ended(call_data: dict, db: AsyncSession) -> dict:
 
 
 @router.post("/twilio/sms")
-async def twilio_sms_webhook(request: Request):
-    """Receive inbound SMS replies from Twilio."""
+async def twilio_sms_webhook(request: Request, db: AsyncSession = Depends(get_db)):
+    """Receive inbound SMS replies from Twilio (owner approval responses)."""
     form = await request.form()
     from_number = form.get("From", "")
-    body = form.get("Body", "")
+    body = form.get("Body", "").strip().upper()
+    
     logger.info("Inbound SMS from %s: %s", from_number, body[:100])
-    return {"status": "ok"}
+    
+    # Parse approval response
+    approval_decision = None
+    if body in ["YES", "Y", "APPROVE", "APPROVED", "ACCEPT"]:
+        approval_decision = "approved"
+    elif body in ["NO", "N", "REJECT", "REJECTED", "DECLINE"]:
+        approval_decision = "rejected"
+    else:
+        logger.warning("Unrecognized SMS response: %s", body)
+        return {"status": "ok", "message": "unrecognized_command"}
+    
+    # Find the business by owner phone
+    result = await db.execute(
+        select(Business).where(Business.owner_phone == from_number)
+    )
+    business = result.scalar_one_or_none()
+    
+    if not business:
+        logger.warning("SMS from unknown owner phone: %s", from_number)
+        return {"status": "ok", "message": "owner_not_found"}
+    
+    # Find the most recent pending call for this business
+    result = await db.execute(
+        select(Call)
+        .where(
+            Call.business_id == business.retell_agent_id,
+            Call.approval_status == "pending"
+        )
+        .order_by(desc(Call.created_at))
+        .limit(1)
+    )
+    call = result.scalar_one_or_none()
+    
+    if not call:
+        logger.warning("No pending calls found for business %s", business.id)
+        await _send_sms(
+            to=from_number,
+            body="No pending bookings to approve. Reply YES/NO to the latest booking notification."
+        )
+        return {"status": "ok", "message": "no_pending_calls"}
+    
+    # Update call approval status
+    call.approval_status = approval_decision
+    await db.commit()
+    
+    logger.info("Call %s approval updated to %s by %s", call.call_id, approval_decision, from_number)
+    
+    # Send confirmation to owner
+    if approval_decision == "approved":
+        confirmation = f"✅ Booking APPROVED for {call.lead_name or 'customer'} ({call.caller_phone}). "\
+                      f"Service: {call.service_type or 'N/A'}."
+    else:
+        confirmation = f"❌ Booking REJECTED for {call.lead_name or 'customer'} ({call.caller_phone})."
+    
+    await _send_sms(to=from_number, body=confirmation)
+    
+    # Broadcast update to dashboard
+    try:
+        await broadcast({
+            "event": "approval_updated",
+            "call_id": call.call_id,
+            "approval_status": approval_decision,
+        })
+    except Exception as e:
+        logger.error("WebSocket broadcast failed: %s", e)
+    
+    return {"status": "ok", "approval_status": approval_decision, "call_id": call.call_id}
