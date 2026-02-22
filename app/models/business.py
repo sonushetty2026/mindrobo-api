@@ -22,6 +22,8 @@ class Business(Base):
     owner_email = Column(String, nullable=True)
     retell_agent_id = Column(String, unique=True, index=True, nullable=True)
     twilio_phone_number = Column(String, nullable=True)  # dedicated inbound number
+    stripe_customer_id = Column(String, unique=True, nullable=True)
+    subscription_status = Column(String, default="trial")  # trial, active, past_due, canceled
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

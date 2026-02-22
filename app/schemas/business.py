@@ -32,6 +32,8 @@ class BusinessOut(BaseModel):
     owner_email: str | None = None
     retell_agent_id: str | None = None
     twilio_phone_number: str | None = None
+    stripe_customer_id: str | None = None
+    subscription_status: str | None = None
     is_active: bool
     created_at: datetime | None = None
     updated_at: datetime | None = None

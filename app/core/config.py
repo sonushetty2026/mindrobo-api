@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     APP_ENV: str = "development"
     SECRET_KEY: str = "changeme"
-    JWT_SECRET_KEY: str = "changeme-jwt-secret"
+    JWT_SECRET_KEY: str = "changeme-jwt-secret"  # For JWT tokens
     DATABASE_URL: str
     RETELL_API_KEY: str = ""
     RETELL_WEBHOOK_SECRET: str = ""
@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     
     # Azure Blob Storage
     AZURE_BLOB_CONNECTION_STRING: str = ""  # Required for call recordings/transcripts
+    
+    # Stripe Billing
+    STRIPE_API_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+    STRIPE_PRICE_ID: str = ""  # Price ID for $49/month subscription
 
     class Config:
         env_file = ".env"
