@@ -14,6 +14,16 @@ class BusinessCreate(BaseModel):
     twilio_phone_number: str | None = None
 
 
+class BusinessUpdate(BaseModel):
+    """Schema for updating business settings."""
+    name: str | None = None
+    owner_name: str | None = None
+    owner_phone: str | None = None
+    owner_email: str | None = None
+    retell_agent_id: str | None = None
+    twilio_phone_number: str | None = None
+
+
 class BusinessOut(BaseModel):
     id: UUID
     name: str
