@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import webhooks, calls, businesses, dashboard, onboarding, knowledge, ingest, auth
+from app.api.v1.endpoints import webhooks, calls, businesses, dashboard, onboarding, knowledge, ingest, auth, analytics
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
@@ -10,3 +10,4 @@ api_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboar
 api_router.include_router(onboarding.router, prefix="/onboarding", tags=["onboarding"])
 api_router.include_router(knowledge.router, prefix="/knowledge", tags=["knowledge"])
 api_router.include_router(ingest.router, prefix="/ingest", tags=["ingest"])
+api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
