@@ -60,6 +60,7 @@ async def test_subscription_created_updates_business(client, db):
     )
     db.add(business)
     await db.commit()
+    business_id = business.id
     
     # Send subscription.created webhook
     with patch("app.core.config.settings.STRIPE_WEBHOOK_SECRET", ""):
@@ -79,8 +80,11 @@ async def test_subscription_created_updates_business(client, db):
     
     assert resp.status_code == 200
     
+    # Expire all objects to force fresh query
+    db.expire_all()
+    
     # Verify business subscription_status updated
-    result = await db.execute(select(Business).where(Business.stripe_customer_id == "cus_test123"))
+    result = await db.execute(select(Business).where(Business.id == business_id))
     updated_business = result.scalar_one()
     assert updated_business.subscription_status == "active"
 
@@ -100,6 +104,7 @@ async def test_subscription_deleted_cancels_subscription(client, db):
     )
     db.add(business)
     await db.commit()
+    business_id = business.id
     
     # Send subscription.deleted webhook
     with patch("app.core.config.settings.STRIPE_WEBHOOK_SECRET", ""):
@@ -118,7 +123,10 @@ async def test_subscription_deleted_cancels_subscription(client, db):
     
     assert resp.status_code == 200
     
+    # Expire all objects to force fresh query
+    db.expire_all()
+    
     # Verify business subscription_status updated to canceled
-    result = await db.execute(select(Business).where(Business.stripe_customer_id == "cus_cancel123"))
+    result = await db.execute(select(Business).where(Business.id == business_id))
     updated_business = result.scalar_one()
     assert updated_business.subscription_status == "canceled"
