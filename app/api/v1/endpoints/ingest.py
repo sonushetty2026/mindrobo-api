@@ -19,6 +19,7 @@ from app.core.database import get_db
 from app.models.knowledge import KnowledgeEntry
 from app.models.business import Business
 from app.services.scraper import scrape_url
+from app.services.pdf_extractor import extract_pdf_text
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -153,12 +154,28 @@ async def preview_ingest(
             raise HTTPException(status_code=422, detail=str(e))
     
     elif pdf_file:
-        # PDF ingestion - for now, raise not implemented
-        # TODO: Implement PDF text extraction (PyPDF2 or pdfplumber)
-        raise HTTPException(
-            status_code=501,
-            detail="PDF ingestion not yet implemented. Please use a URL for now."
-        )
+        # PDF ingestion
+        try:
+            # Read file content
+            file_content = await pdf_file.read()
+            filename = pdf_file.filename or "document.pdf"
+            
+            # Extract text from PDF
+            extracted = await extract_pdf_text(file_content, filename)
+            
+            source_url = f"pdf://{filename}"  # Pseudo-URL for tracking
+            title = extracted.get("title") or filename
+            content = extracted["content"]
+            content_type = _guess_content_type(filename, title)
+            
+            logger.info(
+                "PDF extracted: %s (%d pages, %d chars)",
+                filename, extracted.get("page_count", 0), len(content)
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e))
+        except ImportError as e:
+            raise HTTPException(status_code=500, detail=str(e))
     
     else:
         raise HTTPException(
