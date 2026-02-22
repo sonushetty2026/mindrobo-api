@@ -27,3 +27,9 @@ async def health():
 async def dashboard_redirect():
     from fastapi.responses import RedirectResponse
     return RedirectResponse(url="/api/v1/dashboard/")
+
+
+@app.get("/onboarding")
+async def onboarding_redirect():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/api/v1/onboarding/")
