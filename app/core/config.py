@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     APP_ENV: str = "development"
     SECRET_KEY: str = "changeme"
+    JWT_SECRET_KEY: str = "changeme-jwt-secret"
     DATABASE_URL: str
     RETELL_API_KEY: str = ""
     RETELL_WEBHOOK_SECRET: str = ""
