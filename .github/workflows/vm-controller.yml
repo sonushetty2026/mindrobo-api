@@ -1,0 +1,127 @@
+name: VM Controller
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      command:
+        description: 'Manual command (startvm/stopvm/vmstatus)'
+        required: false
+        default: 'vmstatus'
+
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Telegram and control VM
+        env:
+          BOT_TOKEN: ${{ secrets.VMCONTROL_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.VMCONTROL_CHAT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.VMCTL_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.VMCTL_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.VMCTL_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.VMCTL_SUBSCRIPTION_ID }}
+          RESOURCE_GROUP: cbmrnew
+          VM_NAME: VMcbmr
+          MANUAL_CMD: ${{ github.event.inputs.command }}
+        run: |
+          python3 << 'PYEOF'
+          import requests, os, subprocess, time
+
+          BOT_TOKEN = os.environ["BOT_TOKEN"]
+          CHAT_ID = int(os.environ["CHAT_ID"])
+          RG = os.environ["RESOURCE_GROUP"]
+          VM = os.environ["VM_NAME"]
+          MANUAL_CMD = os.environ.get("MANUAL_CMD", "")
+
+          def send_msg(text):
+              try:
+                  requests.post(
+                      f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+                      json={"chat_id": CHAT_ID, "text": text},
+                      timeout=10
+                  )
+              except Exception as e:
+                  print(f"Telegram send failed: {e}")
+
+          def az_login():
+              result = subprocess.run([
+                  "az", "login", "--service-principal",
+                  "-u", os.environ["AZURE_CLIENT_ID"],
+                  "-p", os.environ["AZURE_CLIENT_SECRET"],
+                  "--tenant", os.environ["AZURE_TENANT_ID"]
+              ], capture_output=True, text=True)
+              return result.returncode == 0
+
+          def run_command(cmd):
+              print(f"Running command: {cmd}")
+              if not az_login():
+                  send_msg("ERROR: Azure login failed. Check VMCTL secrets.")
+                  return
+
+              if cmd == "startvm":
+                  send_msg("Starting VM VMcbmr... ~60 seconds.")
+                  r = subprocess.run(["az", "vm", "start", "-g", RG, "-n", VM],
+                                     capture_output=True, text=True, timeout=300)
+                  if r.returncode == 0:
+                      send_msg("VM started! Your 6 agents are coming back online.")
+                  else:
+                      send_msg(f"Failed to start VM:\n{r.stderr[:300]}")
+
+              elif cmd == "stopvm":
+                  send_msg("Stopping and deallocating VM VMcbmr...")
+                  r = subprocess.run(["az", "vm", "deallocate", "-g", RG, "-n", VM],
+                                     capture_output=True, text=True, timeout=300)
+                  if r.returncode == 0:
+                      send_msg("VM stopped and deallocated. Billing paused.")
+                  else:
+                      send_msg(f"Failed to stop VM:\n{r.stderr[:300]}")
+
+              elif cmd == "vmstatus":
+                  r = subprocess.run([
+                      "az", "vm", "get-instance-view",
+                      "-g", RG, "-n", VM,
+                      "--query", "instanceView.statuses[1].displayStatus",
+                      "-o", "tsv"
+                  ], capture_output=True, text=True, timeout=60)
+                  status = r.stdout.strip() or "Unknown"
+                  send_msg(f"VM VMcbmr status: {status}")
+
+          # If manually triggered, run that command
+          if MANUAL_CMD:
+              run_command(MANUAL_CMD.lower().replace("/", ""))
+          else:
+              # Poll Telegram for commands from the authorized user (last 6 minutes)
+              now = time.time()
+              try:
+                  resp = requests.get(
+                      f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates",
+                      params={"timeout": 5, "allowed_updates": ["message"]},
+                      timeout=15
+                  )
+                  updates = resp.json().get("result", [])
+              except Exception as e:
+                  print(f"Telegram poll failed: {e}")
+                  updates = []
+
+              cmds_found = []
+              for update in updates:
+                  msg = update.get("message", {})
+                  if not msg:
+                      continue
+                  sender_id = msg.get("from", {}).get("id")
+                  if sender_id != CHAT_ID:
+                      continue
+                  msg_time = msg.get("date", 0)
+                  if now - msg_time > 360:
+                      continue
+                  text = msg.get("text", "").strip().lower().lstrip("/")
+                  if text in ["startvm", "stopvm", "vmstatus"]:
+                      cmds_found.append(text)
+
+              if cmds_found:
+                  run_command(cmds_found[-1])
+              else:
+                  print("No VM commands found in last 6 minutes.")
+          PYEOF
