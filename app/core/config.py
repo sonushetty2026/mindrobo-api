@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     TWILIO_PHONE_NUMBER: str = ""
     AZURE_STORAGE_ACCOUNT: str = ""
     KEY_VAULT_NAME: str = "kv-mindrobo-dev"
+    
+    # Stripe billing
+    STRIPE_SECRET_KEY: str = "sk_test_placeholder"  # Replace with real key in production
+    STRIPE_WEBHOOK_SECRET: str = ""
+    STRIPE_PRICE_ID: str = "price_test_placeholder"  # $49/mo price ID from Stripe dashboard
 
     class Config:
         env_file = ".env"
