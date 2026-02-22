@@ -36,7 +36,7 @@ async def register(user_data: UserRegister, db: AsyncSession = Depends(get_db)):
     business = Business(
         name=user_data.business_name,
         owner_email=user_data.email,
-        owner_phone=getattr(user_data, 'owner_phone', ""),
+        owner_phone=user_data.owner_phone or "+10000000000",  # Default placeholder if not provided
         is_active=True,
     )
     db.add(business)
@@ -46,7 +46,7 @@ async def register(user_data: UserRegister, db: AsyncSession = Depends(get_db)):
     user = User(
         email=user_data.email,
         hashed_password=hash_password(user_data.password),
-        full_name=getattr(user_data, 'full_name', None),
+        full_name=user_data.full_name,
         business_id=business.id,
         is_active=True,
     )
