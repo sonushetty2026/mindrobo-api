@@ -1,8 +1,9 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, webhooks, calls, businesses, dashboard, onboarding, knowledge, ingest, analytics
+from app.api.v1.endpoints import auth, billing, webhooks, calls, businesses, dashboard, onboarding, knowledge, ingest, analytics
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
+api_router.include_router(billing.router, prefix="/billing", tags=["billing"])
 api_router.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
 api_router.include_router(calls.router, prefix="/calls", tags=["calls"])
 api_router.include_router(businesses.router, prefix="/businesses", tags=["businesses"])
