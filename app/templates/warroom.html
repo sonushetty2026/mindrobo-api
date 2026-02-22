@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindRobo War Room — Agent Status</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Courier New', monospace;
+    background: #0a0e1a;
+    color: #e2e8f0;
+    padding: 24px;
+    min-height: 100vh;
+  }
+  
+  .container { max-width: 1600px; margin: 0 auto; }
+  
+  /* Header */
+  .header {
+    margin-bottom: 40px;
+    text-align: center;
+  }
+  
+  .title {
+    font-size: 3rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #38bdf8, #6366f1, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+    letter-spacing: -0.02em;
+  }
+  
+  .subtitle {
+    font-size: 1.1rem;
+    color: #64748b;
+    font-weight: 500;
+  }
+  
+  /* System Status Bar */
+  .system-status {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 24px 32px;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+  
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .status-icon {
+    font-size: 2rem;
+  }
+  
+  .status-details h3 {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+  
+  .status-details p {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #e2e8f0;
+  }
+  
+  .refresh-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: #64748b;
+  }
+  
+  .pulse-dot {
+    width: 10px;
+    height: 10px;
+    background: #22c55e;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.1); }
+  }
+  
+  /* Agent Grid */
+  .agents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  
+  /* Agent Card */
+  .agent-card {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border: 2px solid #334155;
+    border-radius: 20px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .agent-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--agent-color);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  }
+  
+  .agent-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: var(--agent-color);
+  }
+  
+  .agent-card.status-active {
+    border-color: rgba(34, 197, 94, 0.5);
+    --agent-glow: rgba(34, 197, 94, 0.2);
+  }
+  
+  .agent-card.status-thinking {
+    border-color: rgba(251, 191, 36, 0.5);
+    --agent-glow: rgba(251, 191, 36, 0.2);
+  }
+  
+  .agent-card.status-idle {
+    border-color: rgba(100, 116, 139, 0.5);
+    --agent-glow: rgba(100, 116, 139, 0.2);
+  }
+  
+  .agent-card.status-offline {
+    border-color: rgba(239, 68, 68, 0.5);
+    --agent-glow: rgba(239, 68, 68, 0.2);
+  }
+  
+  /* Agent Header */
+  .agent-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  
+  .agent-info {
+    flex: 1;
+  }
+  
+  .agent-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .agent-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--agent-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #0a0e1a;
+  }
+  
+  .agent-role {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    font-weight: 500;
+  }
+  
+  /* Status Badge */
+  .status-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .status-badge::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  
+  .status-badge.active {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+  }
+  
+  .status-badge.thinking {
+    background: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+  }
+  
+  .status-badge.idle {
+    background: rgba(100, 116, 139, 0.2);
+    color: #94a3b8;
+  }
+  
+  .status-badge.offline {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+  }
+  
+  /* Last Action */
+  .agent-action {
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 16px;
+  }
+  
+  .action-label {
+    font-size: 0.75rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+  
+  .action-text {
+    font-size: 0.95rem;
+    color: #cbd5e1;
+    line-height: 1.5;
+    font-family: 'Courier New', monospace;
+  }
+  
+  .last-update {
+    font-size: 0.75rem;
+    color: #475569;
+    margin-top: 12px;
+    font-style: italic;
+  }
+  
+  /* Loading State */
+  .loading {
+    text-align: center;
+    padding: 60px 20px;
+  }
+  
+  .loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 5px solid #334155;
+    border-top-color: #38bdf8;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 32px 0;
+    color: #64748b;
+    font-size: 0.9rem;
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .title {
+      font-size: 2rem;
+    }
+    
+    .agents-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .system-status {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <h1 class="title">🚀 MindRobo War Room</h1>
+    <p class="subtitle">Real-time Agent Status Monitor</p>
+  </div>
+  
+  <!-- System Status -->
+  <div class="system-status">
+    <div class="status-item">
+      <div class="status-icon">⚡</div>
+      <div class="status-details">
+        <h3>System Status</h3>
+        <p id="system-status">—</p>
+      </div>
+    </div>
+    
+    <div class="status-item">
+      <div class="status-icon">🤖</div>
+      <div class="status-details">
+        <h3>Active Agents</h3>
+        <p id="active-count">—</p>
+      </div>
+    </div>
+    
+    <div class="refresh-indicator">
+      <span class="pulse-dot"></span>
+      <span id="refresh-status">Auto-refresh in 10s</span>
+    </div>
+  </div>
+  
+  <!-- Agents Grid -->
+  <div id="agents-container">
+    <div class="loading">
+      <div class="loading-spinner"></div>
+      <p>Loading agent status...</p>
+    </div>
+  </div>
+  
+  <!-- Footer -->
+  <div class="footer">
+    <p>Last updated: <span id="last-refresh">—</span></p>
+  </div>
+</div>
+
+<script>
+  let refreshTimer = 10;
+  let agents = [];
+  
+  // Agent color mapping
+  const agentColors = {
+    'orchestrator': '#3b82f6', // blue
+    'backend': '#8b5cf6',      // purple
+    'frontend': '#06b6d4',     // cyan
+    'qa': '#22c55e',           // green
+    'ingestion': '#f59e0b',    // orange
+  };
+  
+  // Format time ago
+  function timeAgo(isoString) {
+    if (!isoString) return '—';
+    const date = new Date(isoString);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+    
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    return `${Math.floor(seconds / 86400)}d ago`;
+  }
+  
+  // Render agent card
+  function renderAgentCard(agent) {
+    const color = agentColors[agent.id] || '#64748b';
+    const initial = agent.name.charAt(0);
+    
+    return `
+      <div class="agent-card status-${agent.status}" style="--agent-color: ${color}">
+        <div class="agent-header">
+          <div class="agent-info">
+            <div class="agent-name">
+              <div class="agent-avatar" style="background: ${color}">${initial}</div>
+              ${agent.name}
+            </div>
+            <div class="agent-role">${agent.role}</div>
+          </div>
+          <div class="status-badge ${agent.status}">${agent.status}</div>
+        </div>
+        
+        <div class="agent-action">
+          <div class="action-label">Last Action</div>
+          <div class="action-text">${agent.last_action || 'No recent activity'}</div>
+          <div class="last-update">${timeAgo(agent.last_update)}</div>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Update dashboard
+  async function updateDashboard() {
+    try {
+      const response = await fetch('/api/v1/warroom/status');
+      const data = await response.json();
+      
+      // Update system status
+      document.getElementById('system-status').textContent = 
+        data.system_status === 'operational' ? '🟢 Operational' : '🔴 Issues Detected';
+      document.getElementById('active-count').textContent = 
+        `${data.active_agents} / ${data.total_agents}`;
+      
+      // Render agent cards
+      const container = document.getElementById('agents-container');
+      container.innerHTML = '<div class="agents-grid">' + 
+        data.agents.map(renderAgentCard).join('') + 
+        '</div>';
+      
+      // Update last refresh time
+      document.getElementById('last-refresh').textContent = 
+        new Date(data.last_refresh).toLocaleString();
+      
+      agents = data.agents;
+      
+    } catch (error) {
+      console.error('Failed to fetch agent status:', error);
+      document.getElementById('agents-container').innerHTML = `
+        <div class="loading">
+          <div style="font-size: 3rem; margin-bottom: 20px;">⚠️</div>
+          <p style="color: #ef4444;">Failed to load agent status. Retrying in 10s...</p>
+        </div>
+      `;
+    }
+  }
+  
+  // Auto-refresh timer
+  function startRefreshTimer() {
+    setInterval(() => {
+      refreshTimer--;
+      if (refreshTimer <= 0) {
+        refreshTimer = 10;
+        updateDashboard();
+      }
+      document.getElementById('refresh-status').textContent = 
+        `Auto-refresh in ${refreshTimer}s`;
+    }, 1000);
+  }
+  
+  // Initial load
+  updateDashboard();
+  startRefreshTimer();
+</script>
+</body>
+</html>
