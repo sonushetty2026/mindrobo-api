@@ -42,8 +42,8 @@ async def test_webhook_looks_up_owner_phone(client):
         "retell_agent_id": "agent-storm",
     })
 
-    with patch("app.api.v1.endpoints.webhooks.send_caller_confirmation", new_callable=AsyncMock) as mock_caller, \
-         patch("app.api.v1.endpoints.webhooks.send_owner_summary", new_callable=AsyncMock) as mock_owner, \
+    with patch("app.services.calls.send_caller_confirmation", new_callable=AsyncMock) as mock_caller, \
+         patch("app.services.calls.send_owner_summary", new_callable=AsyncMock) as mock_owner, \
          patch("app.api.v1.endpoints.webhooks.broadcast", new_callable=AsyncMock):
 
         await client.post("/api/v1/webhooks/retell", json={

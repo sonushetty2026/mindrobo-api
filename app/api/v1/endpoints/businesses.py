@@ -1,5 +1,6 @@
 """Business CRUD endpoints — onboard and manage businesses."""
 
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -28,7 +29,12 @@ async def list_businesses(db: AsyncSession = Depends(get_db)):
 
 @router.get("/{business_id}", response_model=BusinessOut)
 async def get_business(business_id: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Business).where(Business.id == business_id))
+    try:
+        business_uuid = UUID(business_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid business ID format")
+    
+    result = await db.execute(select(Business).where(Business.id == business_uuid))
     biz = result.scalar_one_or_none()
     if not biz:
         raise HTTPException(status_code=404, detail="Business not found")

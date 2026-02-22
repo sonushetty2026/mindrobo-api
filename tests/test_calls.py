@@ -21,8 +21,8 @@ async def test_get_call_not_found(client):
 @pytest.mark.asyncio
 async def test_list_calls_after_webhook(client):
     """After a call_ended webhook, the call should appear in the list."""
-    with patch("app.api.v1.endpoints.webhooks.send_caller_confirmation", new_callable=AsyncMock), \
-         patch("app.api.v1.endpoints.webhooks.send_owner_summary", new_callable=AsyncMock), \
+    with patch("app.services.calls.send_caller_confirmation", new_callable=AsyncMock), \
+         patch("app.services.calls.send_owner_summary", new_callable=AsyncMock), \
          patch("app.api.v1.endpoints.webhooks.broadcast", new_callable=AsyncMock):
 
         await client.post("/api/v1/webhooks/retell", json={
