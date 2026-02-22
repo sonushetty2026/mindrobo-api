@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindRobo — AI Receptionist Platform</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  
+  .container {
+    max-width: 1200px;
+    width: 100%;
+  }
+  
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 60px;
+  }
+  
+  .logo {
+    font-size: 4rem;
+    margin-bottom: 20px;
+  }
+  
+  .title {
+    font-size: 3rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #38bdf8, #6366f1, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+  }
+  
+  .subtitle {
+    font-size: 1.3rem;
+    color: #94a3b8;
+    font-weight: 500;
+  }
+  
+  /* Dashboard Grid */
+  .dashboards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    margin-bottom: 40px;
+  }
+  
+  .dashboard-card {
+    background: rgba(30, 41, 59, 0.8);
+    border: 2px solid #334155;
+    border-radius: 20px;
+    padding: 32px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .dashboard-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--accent-color);
+  }
+  
+  .dashboard-card:hover {
+    transform: translateY(-8px);
+    border-color: var(--accent-color);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4),
+                0 0 0 1px var(--accent-color);
+  }
+  
+  .dashboard-icon {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    display: block;
+  }
+  
+  .dashboard-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 12px;
+  }
+  
+  .dashboard-desc {
+    font-size: 1rem;
+    color: #94a3b8;
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+  
+  .dashboard-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    background: rgba(56, 189, 248, 0.2);
+    color: #38bdf8;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  /* Color schemes for each dashboard */
+  .dashboard-card[data-dashboard="onboarding"] {
+    --accent-color: #38bdf8;
+  }
+  
+  .dashboard-card[data-dashboard="dashboard"] {
+    --accent-color: #6366f1;
+  }
+  
+  .dashboard-card[data-dashboard="analytics"] {
+    --accent-color: #8b5cf6;
+  }
+  
+  .dashboard-card[data-dashboard="warroom"] {
+    --accent-color: #ec4899;
+  }
+  
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 32px 0;
+    color: #64748b;
+  }
+  
+  .footer-links {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  
+  .footer-link {
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+  }
+  
+  .footer-link:hover {
+    color: #38bdf8;
+  }
+  
+  /* Status Bar */
+  .status-bar {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 20px 32px;
+    margin-bottom: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .status-dot {
+    width: 12px;
+    height: 12px;
+    background: #22c55e;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  
+  .status-text {
+    color: #94a3b8;
+    font-size: 0.9rem;
+  }
+  
+  .status-value {
+    color: #e2e8f0;
+    font-weight: 600;
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .title {
+      font-size: 2rem;
+    }
+    
+    .dashboards {
+      grid-template-columns: 1fr;
+    }
+    
+    .status-bar {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">📞</div>
+    <h1 class="title">MindRobo</h1>
+    <p class="subtitle">AI Receptionist Platform</p>
+  </div>
+  
+  <!-- System Status -->
+  <div class="status-bar">
+    <div class="status-item">
+      <span class="status-dot"></span>
+      <span class="status-text">System Status: <span class="status-value">Operational</span></span>
+    </div>
+    <div class="status-item">
+      <span class="status-text">Version: <span class="status-value">0.1.0</span></span>
+    </div>
+    <div class="status-item">
+      <span class="status-text">Environment: <span class="status-value">Production</span></span>
+    </div>
+  </div>
+  
+  <!-- Dashboards -->
+  <div class="dashboards">
+    <!-- Onboarding -->
+    <a href="/onboarding" class="dashboard-card" data-dashboard="onboarding">
+      <span class="dashboard-icon">🚀</span>
+      <div class="dashboard-name">Onboarding</div>
+      <div class="dashboard-desc">
+        Set up your business profile, train your AI with knowledge from your website or documents.
+      </div>
+      <span class="dashboard-badge">Get Started</span>
+    </a>
+    
+    <!-- Call Dashboard -->
+    <a href="/dashboard" class="dashboard-card" data-dashboard="dashboard">
+      <span class="dashboard-icon">📊</span>
+      <div class="dashboard-name">Live Dashboard</div>
+      <div class="dashboard-desc">
+        Monitor incoming calls in real-time, view leads captured, and track call outcomes.
+      </div>
+      <span class="dashboard-badge">Live Updates</span>
+    </a>
+    
+    <!-- Analytics -->
+    <a href="/analytics" class="dashboard-card" data-dashboard="analytics">
+      <span class="dashboard-icon">📈</span>
+      <div class="dashboard-name">Analytics</div>
+      <div class="dashboard-desc">
+        View call trends, resolution rates, top services, and performance metrics over time.
+      </div>
+      <span class="dashboard-badge">Insights</span>
+    </a>
+    
+    <!-- War Room -->
+    <a href="/warroom" class="dashboard-card" data-dashboard="warroom">
+      <span class="dashboard-icon">🎯</span>
+      <div class="dashboard-name">War Room</div>
+      <div class="dashboard-desc">
+        Monitor all AI agents in real-time, see their status, and track system operations.
+      </div>
+      <span class="dashboard-badge">Agent Monitor</span>
+    </a>
+  </div>
+  
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-links">
+      <a href="/health" class="footer-link">Health Check</a>
+      <a href="/api/v1/docs" class="footer-link">API Docs</a>
+      <a href="https://github.com/mindrobo" class="footer-link" target="_blank">GitHub</a>
+    </div>
+    <p style="font-size: 0.85rem;">© 2026 MindRobo — AI-Powered Receptionist for Small Business</p>
+  </div>
+</div>
+</body>
+</html>
