@@ -6,9 +6,7 @@ from fastapi import APIRouter, Request, HTTPException, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.deps import get_current_user
 from app.core.config import settings
-from app.models.user import User
 from app.services.billing import (
     create_checkout_session,
     handle_subscription_created,
@@ -22,14 +20,17 @@ logger = logging.getLogger(__name__)
 
 @router.post("/create-checkout")
 async def create_checkout(
+    business_id: str = Query(..., description="Business ID for subscription"),
     success_url: str = Query(..., description="URL to redirect on success"),
     cancel_url: str = Query(..., description="URL to redirect on cancel"),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
-    """Create a Stripe checkout session for the authenticated user's business.
+    """Create a Stripe checkout session for a business.
     
     Returns a checkout URL to redirect the user to.
+    
+    NOTE: Once auth is merged, this endpoint should require authentication
+    and use current_user.business_id instead of accepting business_id as param.
     """
     if not settings.STRIPE_API_KEY:
         raise HTTPException(
@@ -38,7 +39,7 @@ async def create_checkout(
         )
     
     checkout_url = await create_checkout_session(
-        business_id=str(current_user.business_id),
+        business_id=business_id,
         success_url=success_url,
         cancel_url=cancel_url,
         db=db,
