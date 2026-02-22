@@ -13,6 +13,7 @@ class Call(Base):
     business_id = Column(String, index=True)
     status = Column(Enum("active","completed","failed", name="call_status"), default="active")
     outcome = Column(Enum("callback_scheduled","lead_captured","escalated","voicemail", name="call_outcome"), nullable=True)
+    approval_status = Column(Enum("pending_approval","approved","rejected", name="approval_status"), default="pending_approval")
     transcript = Column(Text, nullable=True)
     summary = Column(Text, nullable=True)
     lead_name = Column(String, nullable=True)

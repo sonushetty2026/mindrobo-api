@@ -53,6 +53,34 @@ async def send_owner_summary(
     return await _send_sms(owner_phone, body)
 
 
+async def send_approval_request(
+    owner_phone: str,
+    call_id: str,
+    caller_phone: str,
+    lead_name: str | None,
+    service_type: str | None,
+    urgency: str | None,
+) -> bool:
+    """Send a booking approval request to the business owner.
+    
+    Owner can reply with YES or NO to approve/reject the booking.
+    """
+    parts = ["📞 New booking request from MindRobo:"]
+    if lead_name:
+        parts.append(f"Name: {lead_name}")
+    parts.append(f"Phone: {caller_phone}")
+    if service_type:
+        parts.append(f"Service: {service_type}")
+    if urgency:
+        parts.append(f"Urgency: {urgency.upper()}")
+    parts.append("")
+    parts.append(f"Reply YES to approve or NO to reject.")
+    parts.append(f"Ref: {call_id[:8]}")  # Short reference for tracking
+
+    body = "\n".join(parts)
+    return await _send_sms(owner_phone, body)
+
+
 async def _send_sms(to: str, body: str) -> bool:
     """Send an SMS via Twilio. Returns True on success."""
     if not all([settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN, settings.TWILIO_PHONE_NUMBER]):

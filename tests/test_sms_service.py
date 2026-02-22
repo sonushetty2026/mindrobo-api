@@ -1,7 +1,7 @@
 """Tests for SMS service — verifies behavior when Twilio is not configured."""
 
 import pytest
-from app.services.sms import send_caller_confirmation, send_owner_summary
+from app.services.sms import send_caller_confirmation, send_owner_summary, send_approval_request
 
 
 @pytest.mark.asyncio
@@ -20,5 +20,19 @@ async def test_owner_sms_skipped_when_no_credentials():
         service_type="plumbing",
         urgency="high",
         summary="Pipe burst in basement",
+    )
+    assert result is False
+
+
+@pytest.mark.asyncio
+async def test_approval_request_skipped_when_no_credentials():
+    """Approval request SMS should gracefully return False when Twilio creds are empty."""
+    result = await send_approval_request(
+        owner_phone="+15559999999",
+        call_id="test-call-id-123",
+        caller_phone="+15551234567",
+        lead_name="Test Lead",
+        service_type="roof repair",
+        urgency="high",
     )
     assert result is False

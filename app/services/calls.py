@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.call import Call
 from app.models.business import Business
-from app.services.sms import send_caller_confirmation, send_owner_summary
+from app.services.sms import send_caller_confirmation, send_owner_summary, send_approval_request
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +93,7 @@ async def send_notifications(
     caller_phone: str,
     business: Business | None,
     lead: dict,
+    call_id: str,
 ) -> None:
     """Send SMS notifications to caller and business owner.
 
@@ -108,13 +109,13 @@ async def send_notifications(
 
     if business and business.owner_phone:
         try:
-            await send_owner_summary(
+            await send_approval_request(
                 owner_phone=business.owner_phone,
+                call_id=call_id,
                 caller_phone=caller_phone,
                 lead_name=lead.get("lead_name"),
                 service_type=lead.get("service_type"),
                 urgency=lead.get("urgency"),
-                summary=lead.get("summary"),
             )
         except Exception as e:
             logger.error("SMS to owner %s failed: %s", business.owner_phone, e)
