@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     TWILIO_PHONE_NUMBER: str = ""
     AZURE_STORAGE_ACCOUNT: str = ""
     KEY_VAULT_NAME: str = "kv-mindrobo-dev"
+    
+    # Azure Blob Storage
+    AZURE_BLOB_CONNECTION_STRING: str = ""  # Required for call recordings/transcripts
 
     class Config:
         env_file = ".env"
