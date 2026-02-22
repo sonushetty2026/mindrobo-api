@@ -495,19 +495,21 @@
       if (file) {
         // PDF upload
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('pdf_file', file);
         formData.append('business_id', businessId);
-        response = await fetch('/api/v1/knowledge/extract', {
+        response = await fetch('/api/v1/ingest/preview', {
           method: 'POST',
           body: formData,
         });
         sourceInfo = { type: 'pdf', value: file.name };
       } else {
         // URL extraction
-        response = await fetch('/api/v1/knowledge/extract', {
+        const formData = new FormData();
+        formData.append('url', url);
+        formData.append('business_id', businessId);
+        response = await fetch('/api/v1/ingest/preview', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url, business_id: businessId }),
+          body: formData,
         });
         sourceInfo = { type: 'url', value: url };
       }
@@ -518,7 +520,14 @@
       }
       
       const data = await response.json();
-      extractedChunks = data.chunks || [];
+      // Map API response to frontend format
+      extractedChunks = (data.chunks || []).map(chunk => ({
+        id: chunk.temp_id,
+        content: chunk.content,
+        source_type: chunk.content_type,
+        source_url: chunk.source_url,
+        title: chunk.title
+      }));
       
       if (extractedChunks.length === 0) {
         throw new Error('No content could be extracted from this source.');
@@ -600,8 +609,16 @@
     publishSpinner.style.display = 'inline-block';
     
     try {
-      const chunksToPublish = selectedChunks.map(i => extractedChunks[i]);
-      const response = await fetch('/api/v1/knowledge/publish', {
+      const chunksToPublish = selectedChunks.map(i => {
+        const chunk = extractedChunks[i];
+        return {
+          content: chunk.content,
+          source_url: chunk.source_url,
+          title: chunk.title,
+          content_type: chunk.source_type
+        };
+      });
+      const response = await fetch('/api/v1/ingest/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
