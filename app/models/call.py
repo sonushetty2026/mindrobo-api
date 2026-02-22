@@ -20,5 +20,10 @@ class Call(Base):
     lead_address = Column(String, nullable=True)
     service_type = Column(String, nullable=True)
     urgency = Column(String, nullable=True)
+    
+    # Recording and transcript storage
+    recording_url = Column(String, nullable=True)  # Azure Blob URL
+    transcript_url = Column(String, nullable=True)  # Azure Blob URL
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
