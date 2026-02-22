@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindRobo — Live Call Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 24px;
+  }
+  
+  .container { max-width: 1400px; margin: 0 auto; }
+  
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  
+  h1 {
+    font-size: 2rem;
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #1e293b;
+    border-radius: 8px;
+    font-size: 0.9rem;
+  }
+  
+  .live-dot {
+    width: 10px;
+    height: 10px;
+    background: #22c55e;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  
+  /* Filters */
+  .filters {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  
+  .search-box {
+    flex: 1;
+    min-width: 250px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 1rem;
+    outline: none;
+  }
+  
+  .search-box:focus {
+    border-color: #38bdf8;
+  }
+  
+  .filter-btn {
+    padding: 12px 20px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #94a3b8;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .filter-btn:hover {
+    border-color: #38bdf8;
+    color: #e2e8f0;
+  }
+  
+  .filter-btn.active {
+    background: #38bdf8;
+    color: #0f172a;
+    border-color: #38bdf8;
+  }
+  
+  /* Stats Cards */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  
+  .stat-card {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #334155;
+  }
+  
+  .stat-label {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+  
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #38bdf8;
+  }
+  
+  /* Table */
+  .table-wrapper {
+    background: #1e293b;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #334155;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  th {
+    text-align: left;
+    padding: 16px;
+    background: #0f172a;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    border-bottom: 2px solid #334155;
+  }
+  
+  td {
+    padding: 16px;
+    border-bottom: 1px solid #334155;
+    font-size: 0.95rem;
+  }
+  
+  tr:last-child td {
+    border-bottom: none;
+  }
+  
+  tbody tr {
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  
+  tbody tr:hover {
+    background: #334155;
+  }
+  
+  tbody tr.expanded {
+    background: #334155;
+  }
+  
+  .call-details {
+    background: #0f172a;
+    border-top: 1px solid #475569;
+  }
+  
+  .call-details td {
+    padding: 24px;
+  }
+  
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+  }
+  
+  .detail-section h3 {
+    font-size: 0.9rem;
+    color: #38bdf8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+  }
+  
+  .detail-item {
+    margin-bottom: 12px;
+  }
+  
+  .detail-label {
+    font-size: 0.8rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+  
+  .detail-value {
+    color: #cbd5e1;
+    font-size: 0.95rem;
+  }
+  
+  .transcript-box {
+    background: #1e293b;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    max-height: 300px;
+    overflow-y: auto;
+    line-height: 1.6;
+    color: #cbd5e1;
+    font-size: 0.9rem;
+  }
+  
+  /* Badges */
+  .badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .badge-high { background: #dc2626; color: #fff; }
+  .badge-medium { background: #f59e0b; color: #000; }
+  .badge-low { background: #22c55e; color: #000; }
+  .badge-lead { background: #6366f1; color: #fff; }
+  .badge-callback { background: #8b5cf6; color: #fff; }
+  .badge-escalated { background: #f97316; color: #fff; }
+  .badge-voicemail { background: #64748b; color: #fff; }
+  .badge-active { background: #3b82f6; color: #fff; }
+  .badge-completed { background: #10b981; color: #000; }
+  .badge-failed { background: #ef4444; color: #fff; }
+  
+  /* Empty State */
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #64748b;
+  }
+  
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+  
+  /* New Call Animation */
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  tr.new-call {
+    animation: slideIn 0.3s ease-out;
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    table {
+      font-size: 0.85rem;
+    }
+    
+    th, td {
+      padding: 12px 8px;
+    }
+    
+    .stats {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <h1>
+      <span>📞</span>
+      <span>MindRobo Dashboard</span>
+    </h1>
+    <div class="status-indicator">
+      <span class="live-dot"></span>
+      <span id="ws-status">Connecting...</span>
+    </div>
+  </div>
+  
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">Total Calls</div>
+      <div class="stat-value" id="stat-total">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Leads Captured</div>
+      <div class="stat-value" id="stat-leads">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Callbacks Scheduled</div>
+      <div class="stat-value" id="stat-callbacks">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">High Priority</div>
+      <div class="stat-value" id="stat-urgent">0</div>
+    </div>
+  </div>
+  
+  <!-- Filters -->
+  <div class="filters">
+    <input
+      type="text"
+      id="search-input"
+      class="search-box"
+      placeholder="Search calls by name, phone, or service..."
+    >
+    <button class="filter-btn active" data-filter="all">All Calls</button>
+    <button class="filter-btn" data-filter="lead_captured">Leads</button>
+    <button class="filter-btn" data-filter="callback_scheduled">Callbacks</button>
+    <button class="filter-btn" data-filter="high">High Priority</button>
+  </div>
+  
+  <!-- Table -->
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Business</th>
+          <th>Owner</th>
+          <th>Caller</th>
+          <th>Lead Name</th>
+          <th>Service</th>
+          <th>Urgency</th>
+          <th>Outcome</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="calls-table">
+        <tr>
+          <td colspan="9" class="empty">
+            <div class="empty-icon">📞</div>
+            <div>No calls yet. Waiting for incoming calls...</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // State
+  let allCalls = [];
+  let currentFilter = 'all';
+  let searchQuery = '';
+  
+  // Elements
+  const tbody = document.getElementById('calls-table');
+  const wsStatus = document.getElementById('ws-status');
+  const searchInput = document.getElementById('search-input');
+  const filterButtons = document.querySelectorAll('.filter-btn');
+  const statTotal = document.getElementById('stat-total');
+  const statLeads = document.getElementById('stat-leads');
+  const statCallbacks = document.getElementById('stat-callbacks');
+  const statUrgent = document.getElementById('stat-urgent');
+  
+  // Utility functions
+  function formatTime(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    const now = new Date();
+    const diffMs = now - d;
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+  }
+  
+  function urgencyBadge(u) {
+    if (!u) return '—';
+    const cls = u.toLowerCase() === 'high' ? 'badge-high' : u.toLowerCase() === 'medium' ? 'badge-medium' : 'badge-low';
+    return `<span class="badge ${cls}">${u}</span>`;
+  }
+  
+  function outcomeBadge(o) {
+    if (!o) return '—';
+    const badges = {
+      'lead_captured': 'badge-lead',
+      'callback_scheduled': 'badge-callback',
+      'escalated': 'badge-escalated',
+      'voicemail': 'badge-voicemail'
+    };
+    const cls = badges[o] || 'badge-callback';
+    return `<span class="badge ${cls}">${o.replace(/_/g, ' ')}</span>`;
+  }
+  
+  function statusBadge(s) {
+    if (!s) return '—';
+    const badges = {
+      'active': 'badge-active',
+      'completed': 'badge-completed',
+      'failed': 'badge-failed'
+    };
+    const cls = badges[s] || 'badge-active';
+    return `<span class="badge ${cls}">${s}</span>`;
+  }
+  
+  function truncate(str, len) {
+    if (!str) return '—';
+    return str.length > len ? str.substring(0, len) + '...' : str;
+  }
+  
+  // Render call row
+  function renderCallRow(call) {
+    const rowId = `call-${call.call_id}`;
+    const detailsId = `details-${call.call_id}`;
+    
+    return `
+      <tr id="${rowId}" class="call-row" onclick="toggleDetails('${call.call_id}')">
+        <td>${formatTime(call.created_at)}</td>
+        <td>${truncate(call.business_name, 20)}</td>
+        <td>${call.owner_name || '—'}<br><small style="color: #64748b;">${call.owner_phone || ''}</small></td>
+        <td>${call.caller_phone || '—'}</td>
+        <td>${call.lead_name || '—'}</td>
+        <td>${truncate(call.service_type, 25)}</td>
+        <td>${urgencyBadge(call.urgency)}</td>
+        <td>${outcomeBadge(call.outcome)}</td>
+        <td>${statusBadge(call.status)}</td>
+      </tr>
+      <tr id="${detailsId}" class="call-details" style="display: none;">
+        <td colspan="9">
+          <div class="detail-grid">
+            <div class="detail-section">
+              <h3>Call Information</h3>
+              <div class="detail-item">
+                <div class="detail-label">Call ID</div>
+                <div class="detail-value">${call.call_id}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Business ID</div>
+                <div class="detail-value">${call.business_id}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Status</div>
+                <div class="detail-value">${statusBadge(call.status)}</div>
+              </div>
+            </div>
+            
+            <div class="detail-section">
+              <h3>Lead Details</h3>
+              <div class="detail-item">
+                <div class="detail-label">Name</div>
+                <div class="detail-value">${call.lead_name || '—'}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Phone</div>
+                <div class="detail-value">${call.caller_phone || '—'}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Address</div>
+                <div class="detail-value">${call.lead_address || '—'}</div>
+              </div>
+            </div>
+            
+            <div class="detail-section">
+              <h3>Service Request</h3>
+              <div class="detail-item">
+                <div class="detail-label">Service Type</div>
+                <div class="detail-value">${call.service_type || '—'}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Urgency</div>
+                <div class="detail-value">${urgencyBadge(call.urgency)}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Outcome</div>
+                <div class="detail-value">${outcomeBadge(call.outcome)}</div>
+              </div>
+            </div>
+          </div>
+          
+          ${call.summary ? `
+            <div class="detail-section" style="margin-top: 20px;">
+              <h3>Summary</h3>
+              <div class="transcript-box">${call.summary}</div>
+            </div>
+          ` : ''}
+          
+          ${call.transcript ? `
+            <div class="detail-section" style="margin-top: 20px;">
+              <h3>Transcript</h3>
+              <div class="transcript-box">${call.transcript}</div>
+            </div>
+          ` : ''}
+        </td>
+      </tr>
+    `;
+  }
+  
+  // Toggle call details
+  function toggleDetails(callId) {
+    const row = document.getElementById(`call-${callId}`);
+    const details = document.getElementById(`details-${callId}`);
+    
+    if (details.style.display === 'none') {
+      // Close all other details
+      document.querySelectorAll('.call-details').forEach(d => d.style.display = 'none');
+      document.querySelectorAll('.call-row').forEach(r => r.classList.remove('expanded'));
+      
+      details.style.display = 'table-row';
+      row.classList.add('expanded');
+    } else {
+      details.style.display = 'none';
+      row.classList.remove('expanded');
+    }
+  }
+  window.toggleDetails = toggleDetails;
+  
+  // Filter calls
+  function filterCalls() {
+    const filtered = allCalls.filter(call => {
+      // Filter by category
+      if (currentFilter === 'all') {
+        // Show all
+      } else if (currentFilter === 'high') {
+        if (call.urgency?.toLowerCase() !== 'high') return false;
+      } else {
+        if (call.outcome !== currentFilter) return false;
+      }
+      
+      // Filter by search query
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const searchable = [
+          call.lead_name,
+          call.caller_phone,
+          call.service_type,
+          call.business_name,
+          call.owner_name,
+          call.owner_phone
+        ].join(' ').toLowerCase();
+        
+        if (!searchable.includes(q)) return false;
+      }
+      
+      return true;
+    });
+    
+    renderCalls(filtered);
+    updateStats();
+  }
+  
+  // Render calls
+  function renderCalls(calls) {
+    if (calls.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" class="empty">
+        <div class="empty-icon">🔍</div>
+        <div>No calls match your filters</div>
+      </td></tr>`;
+      return;
+    }
+    
+    tbody.innerHTML = calls.map(renderCallRow).join('');
+  }
+  
+  // Update stats
+  function updateStats() {
+    statTotal.textContent = allCalls.length;
+    statLeads.textContent = allCalls.filter(c => c.outcome === 'lead_captured').length;
+    statCallbacks.textContent = allCalls.filter(c => c.outcome === 'callback_scheduled').length;
+    statUrgent.textContent = allCalls.filter(c => c.urgency?.toLowerCase() === 'high').length;
+  }
+  
+  // Handle new call from WebSocket
+  function handleNewCall(call) {
+    // Add to beginning of array
+    allCalls.unshift(call);
+    
+    // Limit to 100 calls in memory
+    if (allCalls.length > 100) {
+      allCalls = allCalls.slice(0, 100);
+    }
+    
+    filterCalls();
+    
+    // Add animation class
+    setTimeout(() => {
+      const row = document.getElementById(`call-${call.call_id}`);
+      if (row) row.classList.add('new-call');
+    }, 50);
+  }
+  
+  // Search input handler
+  searchInput.addEventListener('input', (e) => {
+    searchQuery = e.target.value.trim();
+    filterCalls();
+  });
+  
+  // Filter button handlers
+  filterButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      filterCalls();
+    });
+  });
+  
+  // Initial load
+  fetch('/api/v1/dashboard/recent?limit=50')
+    .then(r => r.json())
+    .then(calls => {
+      allCalls = calls;
+      filterCalls();
+    });
+  
+  // WebSocket for live updates
+  function connectWS() {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${proto}//${location.host}/api/v1/dashboard/ws`);
+    
+    ws.onopen = () => {
+      wsStatus.textContent = 'Live';
+    };
+    
+    ws.onclose = () => {
+      wsStatus.textContent = 'Reconnecting...';
+      setTimeout(connectWS, 3000);
+    };
+    
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.event === 'new_call') {
+        handleNewCall(msg);
+      }
+    };
+  }
+  
+  connectWS();
+</script>
+</body>
+</html>
