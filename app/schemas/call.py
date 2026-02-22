@@ -13,6 +13,7 @@ class CallOut(BaseModel):
     business_id: str | None = None
     status: str | None = None
     outcome: str | None = None
+    approval_status: str | None = None
     transcript: str | None = None
     summary: str | None = None
     lead_name: str | None = None
