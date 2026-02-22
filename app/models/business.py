@@ -4,8 +4,9 @@ Each business (roofing contractor etc.) has config stored here:
 owner phone, business name, Retell agent ID mapping, etc.
 """
 
-from sqlalchemy import Column, String, DateTime, Boolean
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, DateTime, Boolean, Text
+from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.types import JSON
 from sqlalchemy.orm import relationship
 import uuid
 from datetime import datetime
@@ -25,6 +26,13 @@ class Business(Base):
     stripe_customer_id = Column(String, unique=True, nullable=True)
     subscription_status = Column(String, default="trial")  # trial, active, past_due, canceled
     is_active = Column(Boolean, default=True)
+    
+    # Onboarding/config fields (use JSON for SQLite compatibility, will be JSONB in Postgres)
+    industry = Column(String, nullable=True)
+    hours_of_operation = Column(JSON, nullable=True)  # {"mon": "9-5", "tue": "9-5", ...}
+    greeting_script = Column(Text, nullable=True)
+    faqs = Column(JSON, nullable=True)  # [{"question": "...", "answer": "..."}, ...]
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
