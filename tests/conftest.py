@@ -13,6 +13,11 @@ from sqlalchemy.orm import sessionmaker
 from app.core.database import Base, get_db
 from app.main import app
 
+# Import all models to ensure they're registered with Base.metadata
+from app.models.business import Business
+from app.models.call import Call
+from app.models.user import User
+
 
 # Use aiosqlite for fast, isolated tests
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"

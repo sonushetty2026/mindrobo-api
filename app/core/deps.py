@@ -12,6 +12,7 @@ from app.models.user import User
 from app.services.auth import decode_access_token
 
 security = HTTPBearer()
+optional_security = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
@@ -21,6 +22,7 @@ async def get_current_user(
     """Extract and validate the current user from JWT token.
     
     This dependency should be used on all protected endpoints.
+    Raises 401 if no token or invalid token.
     """
     token = credentials.credentials
     payload = decode_access_token(token)
@@ -56,3 +58,37 @@ async def get_current_user(
         )
     
     return user
+
+
+async def get_current_user_optional(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security),
+    db: AsyncSession = Depends(get_db),
+) -> Optional[User]:
+    """Extract and validate the current user from JWT token (optional).
+    
+    Returns None if no token is provided or token is invalid.
+    Use this for endpoints that work with or without authentication.
+    """
+    if not credentials:
+        return None
+    
+    token = credentials.credentials
+    payload = decode_access_token(token)
+    
+    if not payload:
+        return None
+    
+    user_id: Optional[str] = payload.get("sub")
+    if not user_id:
+        return None
+    
+    try:
+        result = await db.execute(select(User).where(User.id == UUID(user_id)))
+        user = result.scalar_one_or_none()
+        
+        if user and user.is_active:
+            return user
+    except Exception:
+        pass
+    
+    return None
