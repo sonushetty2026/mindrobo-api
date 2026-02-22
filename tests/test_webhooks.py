@@ -18,8 +18,8 @@ async def test_call_started_ack(client):
 @pytest.mark.asyncio
 async def test_call_ended_saves_to_db(client, db):
     """call_ended should save a call record to the database."""
-    with patch("app.api.v1.endpoints.webhooks.send_caller_confirmation", new_callable=AsyncMock) as mock_sms_caller, \
-         patch("app.api.v1.endpoints.webhooks.send_owner_summary", new_callable=AsyncMock) as mock_sms_owner, \
+    with patch("app.services.calls.send_caller_confirmation", new_callable=AsyncMock) as mock_sms_caller, \
+         patch("app.services.calls.send_owner_summary", new_callable=AsyncMock) as mock_sms_owner, \
          patch("app.api.v1.endpoints.webhooks.broadcast", new_callable=AsyncMock):
 
         resp = await client.post("/api/v1/webhooks/retell", json={
@@ -67,8 +67,8 @@ async def test_call_ended_missing_call_id(client):
 @pytest.mark.asyncio
 async def test_call_ended_triggers_caller_sms(client):
     """call_ended should attempt to send SMS to caller."""
-    with patch("app.api.v1.endpoints.webhooks.send_caller_confirmation", new_callable=AsyncMock) as mock_sms, \
-         patch("app.api.v1.endpoints.webhooks.send_owner_summary", new_callable=AsyncMock), \
+    with patch("app.services.calls.send_caller_confirmation", new_callable=AsyncMock) as mock_sms, \
+         patch("app.services.calls.send_owner_summary", new_callable=AsyncMock), \
          patch("app.api.v1.endpoints.webhooks.broadcast", new_callable=AsyncMock):
 
         await client.post("/api/v1/webhooks/retell", json={
