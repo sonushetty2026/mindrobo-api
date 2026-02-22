@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindRobo — Onboarding</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+  
+  /* Header */
+  h1 { font-size: 2rem; color: #38bdf8; margin-bottom: 8px; }
+  .subtitle { color: #94a3b8; margin-bottom: 32px; font-size: 1rem; }
+  
+  /* Progress Steps */
+  .steps {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 48px;
+    justify-content: center;
+  }
+  .step {
+    flex: 1;
+    max-width: 200px;
+    text-align: center;
+    padding: 16px;
+    background: #1e293b;
+    border-radius: 12px;
+    border: 2px solid #334155;
+    transition: all 0.3s;
+  }
+  .step.active {
+    border-color: #38bdf8;
+    background: #1e3a52;
+  }
+  .step.completed {
+    border-color: #10b981;
+    background: #064e3b;
+  }
+  .step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #334155;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    margin: 0 auto 8px;
+    font-size: 1.1rem;
+  }
+  .step.active .step-number {
+    background: #38bdf8;
+    color: #0f172a;
+  }
+  .step.completed .step-number {
+    background: #10b981;
+    color: #fff;
+  }
+  .step-title {
+    font-size: 0.9rem;
+    color: #94a3b8;
+  }
+  .step.active .step-title {
+    color: #38bdf8;
+  }
+  .step.completed .step-title {
+    color: #10b981;
+  }
+  
+  /* Content Sections */
+  .content-section {
+    display: none;
+    animation: fadeIn 0.3s;
+  }
+  .content-section.active {
+    display: block;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  /* Forms */
+  .form-group {
+    margin-bottom: 24px;
+  }
+  label {
+    display: block;
+    font-size: 0.9rem;
+    color: #94a3b8;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  input[type="text"],
+  input[type="url"],
+  input[type="file"] {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 1rem;
+    outline: none;
+  }
+  input:focus {
+    border-color: #38bdf8;
+  }
+  
+  /* File Upload */
+  .file-upload-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+  }
+  .file-upload-label {
+    display: block;
+    padding: 16px;
+    border: 2px dashed #334155;
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: #1e293b;
+  }
+  .file-upload-label:hover {
+    border-color: #38bdf8;
+    background: #1e3a52;
+  }
+  .file-upload-label.has-file {
+    border-color: #10b981;
+    background: #064e3b;
+  }
+  input[type="file"] {
+    display: none;
+  }
+  .file-name {
+    color: #10b981;
+    font-weight: 600;
+    margin-top: 8px;
+  }
+  
+  /* Divider */
+  .divider {
+    display: flex;
+    align-items: center;
+    margin: 32px 0;
+    color: #64748b;
+    font-size: 0.9rem;
+  }
+  .divider::before,
+  .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #334155;
+  }
+  .divider span {
+    padding: 0 16px;
+  }
+  
+  /* Review Table */
+  .review-table {
+    background: #1e293b;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .chunk-item {
+    border-bottom: 1px solid #334155;
+    padding: 16px;
+    display: flex;
+    gap: 16px;
+    align-items: start;
+    transition: background 0.2s;
+  }
+  .chunk-item:hover {
+    background: #334155;
+  }
+  .chunk-item:last-child {
+    border-bottom: none;
+  }
+  .chunk-checkbox {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    margin-top: 4px;
+    cursor: pointer;
+  }
+  .chunk-content {
+    flex: 1;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #cbd5e1;
+  }
+  .chunk-meta {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-top: 4px;
+  }
+  .select-all-wrapper {
+    padding: 12px 16px;
+    background: #334155;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+  }
+  
+  /* Buttons */
+  .btn {
+    padding: 14px 24px;
+    border-radius: 8px;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary {
+    background: #38bdf8;
+    color: #0f172a;
+  }
+  .btn-primary:hover {
+    background: #0ea5e9;
+  }
+  .btn-primary:disabled {
+    background: #475569;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  .btn-secondary {
+    background: #334155;
+    color: #e2e8f0;
+  }
+  .btn-secondary:hover {
+    background: #475569;
+  }
+  .button-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 32px;
+  }
+  
+  /* Messages */
+  .message {
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    display: none;
+  }
+  .message.show {
+    display: block;
+  }
+  .message-error {
+    background: #7f1d1d;
+    border: 1px solid #ef4444;
+    color: #fca5a5;
+  }
+  .message-success {
+    background: #064e3b;
+    border: 1px solid #10b981;
+    color: #6ee7b7;
+  }
+  .message-info {
+    background: #1e3a52;
+    border: 1px solid #38bdf8;
+    color: #7dd3fc;
+  }
+  
+  /* Loading Spinner */
+  .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #334155;
+    border-top-color: #38bdf8;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  /* Summary */
+  .summary-card {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #334155;
+  }
+  .summary-item:last-child {
+    border-bottom: none;
+  }
+  .summary-label {
+    color: #94a3b8;
+  }
+  .summary-value {
+    color: #e2e8f0;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📞 MindRobo Onboarding</h1>
+  <p class="subtitle">Train your AI receptionist on your business knowledge — it takes 2 minutes.</p>
+  
+  <!-- Progress Steps -->
+  <div class="steps">
+    <div class="step active" id="step-indicator-1">
+      <div class="step-number">1</div>
+      <div class="step-title">Ingest</div>
+    </div>
+    <div class="step" id="step-indicator-2">
+      <div class="step-number">2</div>
+      <div class="step-title">Review</div>
+    </div>
+    <div class="step" id="step-indicator-3">
+      <div class="step-number">3</div>
+      <div class="step-title">Publish</div>
+    </div>
+  </div>
+  
+  <!-- Messages -->
+  <div class="message message-error" id="error-message"></div>
+  <div class="message message-success" id="success-message"></div>
+  
+  <!-- Step 1: Ingest -->
+  <div class="content-section active" id="step-1">
+    <div class="form-group">
+      <label for="website-url">Business Website URL</label>
+      <input type="url" id="website-url" placeholder="https://yourcompany.com">
+    </div>
+    
+    <div class="divider"><span>OR</span></div>
+    
+    <div class="form-group">
+      <label>Upload PDF (menu, FAQ, policy document)</label>
+      <div class="file-upload-wrapper">
+        <input type="file" id="pdf-upload" accept=".pdf,application/pdf">
+        <label for="pdf-upload" class="file-upload-label" id="file-label">
+          <span>📄 Click to select a PDF file</span>
+          <div class="file-name" id="file-name" style="display: none;"></div>
+        </label>
+      </div>
+    </div>
+    
+    <div class="button-group">
+      <button class="btn btn-primary" id="extract-btn">
+        Extract Knowledge
+        <span class="spinner" style="display: none;" id="extract-spinner"></span>
+      </button>
+    </div>
+  </div>
+  
+  <!-- Step 2: Review -->
+  <div class="content-section" id="step-2">
+    <p style="margin-bottom: 24px; color: #94a3b8;">
+      Review the knowledge chunks we extracted. Check the boxes for information you want your AI to know.
+    </p>
+    
+    <div class="review-table">
+      <div class="select-all-wrapper">
+        <input type="checkbox" id="select-all" class="chunk-checkbox" checked>
+        <label for="select-all" style="margin: 0; text-transform: none; color: #e2e8f0; cursor: pointer;">Select All</label>
+        <span style="margin-left: auto; color: #64748b;" id="selected-count">0 selected</span>
+      </div>
+      <div id="chunks-container">
+        <!-- Chunks will be inserted here -->
+      </div>
+    </div>
+    
+    <div class="button-group">
+      <button class="btn btn-secondary" id="back-to-ingest">← Back</button>
+      <button class="btn btn-primary" id="continue-to-publish">
+        Continue to Publish
+      </button>
+    </div>
+  </div>
+  
+  <!-- Step 3: Publish -->
+  <div class="content-section" id="step-3">
+    <div class="summary-card">
+      <h2 style="margin-bottom: 16px; color: #38bdf8;">Ready to Publish</h2>
+      <div class="summary-item">
+        <span class="summary-label">Source</span>
+        <span class="summary-value" id="summary-source">—</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Chunks Selected</span>
+        <span class="summary-value" id="summary-chunks">0</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Business ID</span>
+        <span class="summary-value" id="summary-business">—</span>
+      </div>
+    </div>
+    
+    <div class="message message-info show">
+      <strong>📌 What happens next:</strong><br>
+      Your AI receptionist will be trained on this knowledge and will use it to answer customer calls.
+      You can always add more knowledge or edit chunks later from your dashboard.
+    </div>
+    
+    <div class="button-group">
+      <button class="btn btn-secondary" id="back-to-review">← Back to Review</button>
+      <button class="btn btn-primary" id="publish-btn">
+        🚀 Publish Knowledge
+        <span class="spinner" style="display: none;" id="publish-spinner"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // State
+  let currentStep = 1;
+  let extractedChunks = [];
+  let selectedChunks = [];
+  let sourceInfo = { type: '', value: '' };
+  const businessId = new URLSearchParams(window.location.search).get('business_id') || 'demo-business-123';
+  
+  // Elements
+  const steps = [1, 2, 3];
+  const websiteUrlInput = document.getElementById('website-url');
+  const pdfUploadInput = document.getElementById('pdf-upload');
+  const fileLabel = document.getElementById('file-label');
+  const fileNameEl = document.getElementById('file-name');
+  const extractBtn = document.getElementById('extract-btn');
+  const extractSpinner = document.getElementById('extract-spinner');
+  const selectAllCheckbox = document.getElementById('select-all');
+  const chunksContainer = document.getElementById('chunks-container');
+  const selectedCountEl = document.getElementById('selected-count');
+  const continueToPublishBtn = document.getElementById('continue-to-publish');
+  const backToIngestBtn = document.getElementById('back-to-ingest');
+  const backToReviewBtn = document.getElementById('back-to-review');
+  const publishBtn = document.getElementById('publish-btn');
+  const publishSpinner = document.getElementById('publish-spinner');
+  const summarySourceEl = document.getElementById('summary-source');
+  const summaryChunksEl = document.getElementById('summary-chunks');
+  const summaryBusinessEl = document.getElementById('summary-business');
+  const errorMessage = document.getElementById('error-message');
+  const successMessage = document.getElementById('success-message');
+  
+  // File upload handler
+  pdfUploadInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      fileLabel.classList.add('has-file');
+      fileNameEl.textContent = file.name;
+      fileNameEl.style.display = 'block';
+      websiteUrlInput.value = ''; // Clear URL if file selected
+    } else {
+      fileLabel.classList.remove('has-file');
+      fileNameEl.style.display = 'none';
+    }
+  });
+  
+  // Extract button
+  extractBtn.addEventListener('click', async () => {
+    hideMessages();
+    const url = websiteUrlInput.value.trim();
+    const file = pdfUploadInput.files[0];
+    
+    if (!url && !file) {
+      showError('Please enter a website URL or upload a PDF.');
+      return;
+    }
+    
+    extractBtn.disabled = true;
+    extractSpinner.style.display = 'inline-block';
+    
+    try {
+      let response;
+      if (file) {
+        // PDF upload
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('business_id', businessId);
+        response = await fetch('/api/v1/knowledge/extract', {
+          method: 'POST',
+          body: formData,
+        });
+        sourceInfo = { type: 'pdf', value: file.name };
+      } else {
+        // URL extraction
+        response = await fetch('/api/v1/knowledge/extract', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, business_id: businessId }),
+        });
+        sourceInfo = { type: 'url', value: url };
+      }
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to extract knowledge');
+      }
+      
+      const data = await response.json();
+      extractedChunks = data.chunks || [];
+      
+      if (extractedChunks.length === 0) {
+        throw new Error('No content could be extracted from this source.');
+      }
+      
+      renderChunks();
+      goToStep(2);
+    } catch (error) {
+      showError(error.message);
+    } finally {
+      extractBtn.disabled = false;
+      extractSpinner.style.display = 'none';
+    }
+  });
+  
+  // Render chunks in review table
+  function renderChunks() {
+    chunksContainer.innerHTML = '';
+    selectedChunks = extractedChunks.map((_, i) => i); // All selected by default
+    
+    extractedChunks.forEach((chunk, index) => {
+      const item = document.createElement('div');
+      item.className = 'chunk-item';
+      item.innerHTML = `
+        <input type="checkbox" class="chunk-checkbox" id="chunk-${index}" checked data-index="${index}">
+        <div class="chunk-content">
+          ${escapeHtml(chunk.content)}
+          <div class="chunk-meta">Source: ${chunk.source_type || 'webpage'}</div>
+        </div>
+      `;
+      chunksContainer.appendChild(item);
+      
+      const checkbox = item.querySelector('.chunk-checkbox');
+      checkbox.addEventListener('change', updateSelectedCount);
+    });
+    
+    updateSelectedCount();
+  }
+  
+  // Select all handler
+  selectAllCheckbox.addEventListener('change', (e) => {
+    const checkboxes = chunksContainer.querySelectorAll('.chunk-checkbox');
+    checkboxes.forEach(cb => cb.checked = e.target.checked);
+    updateSelectedCount();
+  });
+  
+  // Update selected count
+  function updateSelectedCount() {
+    const checkboxes = chunksContainer.querySelectorAll('.chunk-checkbox');
+    selectedChunks = Array.from(checkboxes)
+      .filter(cb => cb.checked)
+      .map(cb => parseInt(cb.dataset.index));
+    selectedCountEl.textContent = `${selectedChunks.length} selected`;
+    
+    const allChecked = selectedChunks.length === extractedChunks.length;
+    const noneChecked = selectedChunks.length === 0;
+    selectAllCheckbox.checked = allChecked;
+    selectAllCheckbox.indeterminate = !allChecked && !noneChecked;
+  }
+  
+  // Navigation
+  backToIngestBtn.addEventListener('click', () => goToStep(1));
+  continueToPublishBtn.addEventListener('click', () => {
+    if (selectedChunks.length === 0) {
+      showError('Please select at least one chunk to publish.');
+      return;
+    }
+    summarySourceEl.textContent = sourceInfo.type === 'pdf' ? sourceInfo.value : sourceInfo.value;
+    summaryChunksEl.textContent = selectedChunks.length;
+    summaryBusinessEl.textContent = businessId;
+    goToStep(3);
+  });
+  backToReviewBtn.addEventListener('click', () => goToStep(2));
+  
+  // Publish button
+  publishBtn.addEventListener('click', async () => {
+    hideMessages();
+    publishBtn.disabled = true;
+    publishSpinner.style.display = 'inline-block';
+    
+    try {
+      const chunksToPublish = selectedChunks.map(i => extractedChunks[i]);
+      const response = await fetch('/api/v1/knowledge/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          business_id: businessId,
+          chunks: chunksToPublish,
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to publish knowledge');
+      }
+      
+      showSuccess(`✅ Success! ${selectedChunks.length} knowledge chunks published. Your AI is now trained.`);
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 2000);
+    } catch (error) {
+      showError(error.message);
+    } finally {
+      publishBtn.disabled = false;
+      publishSpinner.style.display = 'none';
+    }
+  });
+  
+  // Step navigation
+  function goToStep(step) {
+    currentStep = step;
+    steps.forEach(s => {
+      const section = document.getElementById(`step-${s}`);
+      const indicator = document.getElementById(`step-indicator-${s}`);
+      
+      if (s === step) {
+        section.classList.add('active');
+        indicator.classList.add('active');
+        indicator.classList.remove('completed');
+      } else {
+        section.classList.remove('active');
+        indicator.classList.remove('active');
+        if (s < step) {
+          indicator.classList.add('completed');
+        } else {
+          indicator.classList.remove('completed');
+        }
+      }
+    });
+  }
+  
+  // Messages
+  function showError(msg) {
+    errorMessage.textContent = msg;
+    errorMessage.classList.add('show');
+  }
+  
+  function showSuccess(msg) {
+    successMessage.textContent = msg;
+    successMessage.classList.add('show');
+  }
+  
+  function hideMessages() {
+    errorMessage.classList.remove('show');
+    successMessage.classList.remove('show');
+  }
+  
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+  
+  // Initialize
+  summaryBusinessEl.textContent = businessId;
+</script>
+</body>
+</html>

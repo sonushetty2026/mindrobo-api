@@ -1,10 +1,12 @@
 """Self-serve onboarding for business owners.
 
-- GET /api/v1/onboarding/ → signup form
-- POST /api/v1/onboarding/signup → create business + link Retell agent
+- GET /api/v1/onboarding/ → 3-step onboarding (ingest → review → publish)
+- GET /api/v1/onboarding/legacy → old signup form (legacy)
+- POST /api/v1/onboarding/signup → create business + link Retell agent (legacy)
 """
 
 import logging
+from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,8 +19,21 @@ from app.schemas.business import BusinessCreate, BusinessOut
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+# Load the new 3-step onboarding template
+TEMPLATES_DIR = Path(__file__).parent.parent.parent.parent / "app" / "templates"
+ONBOARDING_TEMPLATE_PATH = TEMPLATES_DIR / "onboarding.html"
 
-ONBOARDING_HTML = """<!DOCTYPE html>
+
+def _load_onboarding_template() -> str:
+    """Load the onboarding HTML template from file."""
+    if not ONBOARDING_TEMPLATE_PATH.exists():
+        logger.error("Onboarding template not found at %s", ONBOARDING_TEMPLATE_PATH)
+        return "<html><body><h1>Onboarding template not found</h1></body></html>"
+    return ONBOARDING_TEMPLATE_PATH.read_text()
+
+
+# Legacy signup HTML (kept for backwards compatibility)
+LEGACY_SIGNUP_HTML = """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -137,8 +152,14 @@ form.addEventListener('submit', async (e) => {
 
 @router.get("/", response_class=HTMLResponse)
 async def onboarding_page():
-    """Serve the self-serve signup form."""
-    return ONBOARDING_HTML
+    """Serve the 3-step onboarding flow (ingest → review → publish)."""
+    return _load_onboarding_template()
+
+
+@router.get("/legacy", response_class=HTMLResponse)
+async def legacy_signup_page():
+    """Serve the legacy signup form (kept for backwards compatibility)."""
+    return LEGACY_SIGNUP_HTML
 
 
 @router.post("/signup", response_model=BusinessOut, status_code=201)
