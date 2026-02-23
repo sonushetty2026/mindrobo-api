@@ -153,3 +153,9 @@ async def admin_users_page():
 async def admin_trials_page():
     """Serve the admin trial monitor page."""
     return load_template("admin_trials.html")
+
+
+@app.get("/notifications", response_class=HTMLResponse)
+async def notifications_page():
+    """Serve the notifications center page."""
+    return load_template("admin_notifications.html")
