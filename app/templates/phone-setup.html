@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindRobo — Phone Setup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  .container { max-width: 800px; margin: 0 auto; }
+  
+  h1 { font-size: 2rem; color: #38bdf8; margin-bottom: 8px; }
+  .subtitle { color: #94a3b8; margin-bottom: 32px; font-size: 1rem; }
+  
+  .option-card {
+    background: #1e293b;
+    border: 2px solid #334155;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .option-card:hover {
+    border-color: #38bdf8;
+    background: #1e3a52;
+  }
+  .option-card.selected {
+    border-color: #38bdf8;
+    background: #1e3a52;
+  }
+  .option-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #38bdf8;
+    margin-bottom: 8px;
+  }
+  .option-desc {
+    color: #94a3b8;
+    font-size: 0.95rem;
+  }
+  
+  .form-section {
+    display: none;
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 24px;
+  }
+  .form-section.active {
+    display: block;
+    animation: fadeIn 0.3s;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .form-group {
+    margin-bottom: 24px;
+  }
+  label {
+    display: block;
+    font-size: 0.9rem;
+    color: #94a3b8;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  input[type="text"],
+  select {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: #e2e8f0;
+    font-size: 1rem;
+    outline: none;
+  }
+  input:focus,
+  select:focus {
+    border-color: #38bdf8;
+  }
+  
+  .number-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 16px;
+  }
+  .number-item {
+    padding: 12px;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .number-item:hover {
+    border-color: #38bdf8;
+    background: #1e3a52;
+  }
+  .number-item.selected {
+    border-color: #10b981;
+    background: #064e3b;
+  }
+  
+  .btn {
+    padding: 14px 24px;
+    border-radius: 8px;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary {
+    background: #38bdf8;
+    color: #0f172a;
+  }
+  .btn-primary:hover {
+    background: #0ea5e9;
+  }
+  .btn-primary:disabled {
+    background: #475569;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  .btn-secondary {
+    background: #334155;
+    color: #e2e8f0;
+  }
+  .btn-secondary:hover {
+    background: #475569;
+  }
+  
+  .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #334155;
+    border-top-color: #38bdf8;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  .message {
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    display: none;
+  }
+  .message.show {
+    display: block;
+  }
+  .message-error {
+    background: #7f1d1d;
+    border: 1px solid #ef4444;
+    color: #fca5a5;
+  }
+  .message-success {
+    background: #064e3b;
+    border: 1px solid #10b981;
+    color: #6ee7b7;
+  }
+  
+  .success-card {
+    background: #064e3b;
+    border: 2px solid #10b981;
+    border-radius: 12px;
+    padding: 32px;
+    text-align: center;
+    display: none;
+  }
+  .success-card.show {
+    display: block;
+  }
+  .success-phone {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #10b981;
+    margin: 16px 0;
+  }
+  
+  .instructions {
+    background: #1e3a52;
+    border: 1px solid #38bdf8;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+  }
+  .instructions ol {
+    margin-left: 20px;
+    color: #cbd5e1;
+  }
+  .instructions li {
+    margin: 8px 0;
+  }
+  
+  @media (max-width: 768px) {
+    body {
+      padding: 16px;
+    }
+    h1 {
+      font-size: 1.5rem;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📞 Get Your AI Phone Number</h1>
+  <p class="subtitle">Choose how your AI receptionist will answer calls.</p>
+  
+  <div class="message message-error" id="error-message"></div>
+  <div class="message message-success" id="success-message"></div>
+  
+  <div id="setup-flow">
+    <div class="option-card" id="option-buy">
+      <div class="option-title">🆕 Buy a New Local Number</div>
+      <div class="option-desc">Get a fresh local phone number for your business. We'll set everything up automatically.</div>
+    </div>
+    
+    <div class="option-card" id="option-forward">
+      <div class="option-title">📲 Use My Existing Number</div>
+      <div class="option-desc">Forward your current business line to MindRobo. Keep your existing number.</div>
+    </div>
+    
+    <!-- Buy New Number Flow -->
+    <div class="form-section" id="buy-form">
+      <div class="form-group">
+        <label for="area-code">Area Code</label>
+        <input type="text" id="area-code" placeholder="e.g. 813" maxlength="3" pattern="\d{3}">
+      </div>
+      <button class="btn btn-primary" id="search-btn">
+        Search Available Numbers
+        <span class="spinner" style="display: none;" id="search-spinner"></span>
+      </button>
+      
+      <div class="number-list" id="number-list" style="display: none;"></div>
+      
+      <button class="btn btn-primary" id="purchase-btn" style="display: none; margin-top: 16px;">
+        Purchase Selected Number
+        <span class="spinner" style="display: none;" id="purchase-spinner"></span>
+      </button>
+    </div>
+    
+    <!-- Forward Existing Number Flow -->
+    <div class="form-section" id="forward-form">
+      <div class="form-group">
+        <label for="existing-number">Your Business Phone Number</label>
+        <input type="text" id="existing-number" placeholder="(555) 123-4567">
+      </div>
+      <button class="btn btn-primary" id="forward-btn">
+        Save & Show Forwarding Instructions
+        <span class="spinner" style="display: none;" id="forward-spinner"></span>
+      </button>
+      
+      <div class="instructions" id="forward-instructions" style="display: none;">
+        <h3 style="color: #38bdf8; margin-bottom: 12px;">📋 Call Forwarding Setup</h3>
+        <ol>
+          <li>On your phone, dial <strong>*72</strong> (or **21* for some carriers)</li>
+          <li>Enter this number: <strong id="forward-target">Loading...</strong></li>
+          <li>Wait for confirmation tone</li>
+          <li>Hang up — forwarding is now active!</li>
+        </ol>
+        <p style="margin-top: 12px; color: #94a3b8; font-size: 0.9rem;">
+          To disable forwarding later, dial <strong>*73</strong> (or ##21# for some carriers).
+        </p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Success State -->
+  <div class="success-card" id="success-card">
+    <div style="font-size: 3rem;">✅</div>
+    <h2 style="color: #10b981; margin: 16px 0;">Phone Setup Complete!</h2>
+    <p style="color: #cbd5e1; margin-bottom: 16px;">Your AI receptionist answers at:</p>
+    <div class="success-phone" id="success-phone-display">—</div>
+    <button class="btn btn-primary" onclick="window.location.href='/dashboard'" style="margin-top: 24px;">
+      Go to Dashboard →
+    </button>
+  </div>
+</div>
+
+<script>
+  const businessId = new URLSearchParams(window.location.search).get('business_id') || '00000000-0000-0000-0000-000000000001';
+  let selectedNumber = null;
+  let selectedOption = null;
+  
+  const optionBuy = document.getElementById('option-buy');
+  const optionForward = document.getElementById('option-forward');
+  const buyForm = document.getElementById('buy-form');
+  const forwardForm = document.getElementById('forward-form');
+  const setupFlow = document.getElementById('setup-flow');
+  const successCard = document.getElementById('success-card');
+  const errorMessage = document.getElementById('error-message');
+  const successMessage = document.getElementById('success-message');
+  
+  // Area code search
+  const areaCodeInput = document.getElementById('area-code');
+  const searchBtn = document.getElementById('search-btn');
+  const searchSpinner = document.getElementById('search-spinner');
+  const numberList = document.getElementById('number-list');
+  const purchaseBtn = document.getElementById('purchase-btn');
+  const purchaseSpinner = document.getElementById('purchase-spinner');
+  
+  // Forward form
+  const existingNumberInput = document.getElementById('existing-number');
+  const forwardBtn = document.getElementById('forward-btn');
+  const forwardSpinner = document.getElementById('forward-spinner');
+  const forwardInstructions = document.getElementById('forward-instructions');
+  const forwardTarget = document.getElementById('forward-target');
+  
+  // Option selection
+  optionBuy.addEventListener('click', () => {
+    selectedOption = 'buy';
+    optionBuy.classList.add('selected');
+    optionForward.classList.remove('selected');
+    buyForm.classList.add('active');
+    forwardForm.classList.remove('active');
+  });
+  
+  optionForward.addEventListener('click', () => {
+    selectedOption = 'forward';
+    optionForward.classList.add('selected');
+    optionBuy.classList.remove('selected');
+    forwardForm.classList.add('active');
+    buyForm.classList.remove('active');
+  });
+  
+  // Search available numbers
+  searchBtn.addEventListener('click', async () => {
+    hideMessages();
+    const areaCode = areaCodeInput.value.trim();
+    
+    if (!areaCode || areaCode.length !== 3) {
+      showError('Please enter a 3-digit area code.');
+      return;
+    }
+    
+    searchBtn.disabled = true;
+    searchSpinner.style.display = 'inline-block';
+    
+    try {
+      const response = await fetch(`/api/v1/phone/available?area_code=${areaCode}`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to search numbers');
+      }
+      
+      const data = await response.json();
+      const numbers = data.numbers || [];
+      
+      if (numbers.length === 0) {
+        throw new Error('No numbers available in this area code. Try another.');
+      }
+      
+      renderNumbers(numbers);
+      numberList.style.display = 'block';
+    } catch (error) {
+      showError(error.message);
+    } finally {
+      searchBtn.disabled = false;
+      searchSpinner.style.display = 'none';
+    }
+  });
+  
+  // Render number list
+  function renderNumbers(numbers) {
+    numberList.innerHTML = '';
+    numbers.forEach(num => {
+      const item = document.createElement('div');
+      item.className = 'number-item';
+      item.innerHTML = `
+        <span>${formatPhone(num.phone_number)}</span>
+        <span style="color: #10b981;">Available</span>
+      `;
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.number-item').forEach(i => i.classList.remove('selected'));
+        item.classList.add('selected');
+        selectedNumber = num.phone_number;
+        purchaseBtn.style.display = 'inline-flex';
+      });
+      numberList.appendChild(item);
+    });
+  }
+  
+  // Purchase number
+  purchaseBtn.addEventListener('click', async () => {
+    if (!selectedNumber) return;
+    
+    hideMessages();
+    purchaseBtn.disabled = true;
+    purchaseSpinner.style.display = 'inline-block';
+    
+    try {
+      const response = await fetch('/api/v1/phone/purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          business_id: businessId,
+          phone_number: selectedNumber
+        })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to purchase number');
+      }
+      
+      showSuccess(selectedNumber);
+    } catch (error) {
+      showError(error.message);
+    } finally {
+      purchaseBtn.disabled = false;
+      purchaseSpinner.style.display = 'none';
+    }
+  });
+  
+  // Forward existing number
+  forwardBtn.addEventListener('click', async () => {
+    hideMessages();
+    const phoneNumber = existingNumberInput.value.trim();
+    
+    if (!phoneNumber) {
+      showError('Please enter your business phone number.');
+      return;
+    }
+    
+    forwardBtn.disabled = true;
+    forwardSpinner.style.display = 'inline-block';
+    
+    try {
+      const response = await fetch('/api/v1/phone/forward', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          business_id: businessId,
+          phone_number: phoneNumber
+        })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to save forwarding settings');
+      }
+      
+      const data = await response.json();
+      forwardTarget.textContent = data.forward_to || '(Loading...)';
+      forwardInstructions.style.display = 'block';
+      
+      // Show success after instructions
+      setTimeout(() => {
+        showSuccess(phoneNumber);
+      }, 3000);
+    } catch (error) {
+      showError(error.message);
+    } finally {
+      forwardBtn.disabled = false;
+      forwardSpinner.style.display = 'none';
+    }
+  });
+  
+  // Success display
+  function showSuccess(phone) {
+    setupFlow.style.display = 'none';
+    successCard.classList.add('show');
+    document.getElementById('success-phone-display').textContent = formatPhone(phone);
+  }
+  
+  // Messages
+  function showError(msg) {
+    errorMessage.textContent = msg;
+    errorMessage.classList.add('show');
+  }
+  
+  function hideMessages() {
+    errorMessage.classList.remove('show');
+    successMessage.classList.remove('show');
+  }
+  
+  function formatPhone(phone) {
+    const cleaned = ('' + phone).replace(/\D/g, '');
+    const match = cleaned.match(/^1?(\d{3})(\d{3})(\d{4})$/);
+    if (match) {
+      return '(' + match[1] + ') ' + match[2] + '-' + match[3];
+    }
+    return phone;
+  }
+</script>
+</body>
+</html>
