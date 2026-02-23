@@ -1,7 +1,7 @@
 """add approval_status to calls
 
-Revision ID: 719742f0eef6
-Revises: 003
+Revision ID: 011
+Revises: 010b
 Create Date: 2026-02-22 12:24:54.831108
 """
 from typing import Sequence, Union
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '719742f0eef6'
-down_revision: Union[str, None] = '003'
+revision: str = '011'
+down_revision: Union[str, None] = '010b'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
