@@ -14,6 +14,7 @@ from app.api.v1.endpoints import (
     phone,
     appointments,
     leads,
+    admin,
 )
 
 api_router = APIRouter()
@@ -31,3 +32,4 @@ api_router.include_router(warroom.router, prefix="/warroom", tags=["warroom"])
 api_router.include_router(phone.router, prefix="/phone", tags=["phone"])
 api_router.include_router(appointments.router, prefix="/appointments", tags=["appointments"])
 api_router.include_router(leads.router, prefix="/leads", tags=["leads"])
+api_router.include_router(admin.router, prefix="/admin", tags=["admin"])

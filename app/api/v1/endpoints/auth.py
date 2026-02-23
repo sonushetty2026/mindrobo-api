@@ -96,6 +96,8 @@ async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
     
     Returns 403 if account is not verified.
     """
+    from datetime import datetime
+    
     user = await authenticate_user(db, credentials.email, credentials.password)
     
     if not user:
@@ -111,12 +113,18 @@ async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
             detail="Please verify your email first"
         )
     
+    # Update last login timestamp
+    user.last_login_at = datetime.utcnow()
+    await db.commit()
+    
+    # Include role in JWT payload
     access_token = create_access_token(data={
         "sub": str(user.id),
-        "business_id": str(user.business_id)
+        "business_id": str(user.business_id),
+        "role": user.role
     })
     
-    logger.info("User logged in: %s", user.email)
+    logger.info("User logged in: %s (role: %s)", user.email, user.role)
     return {
         "access_token": access_token,
         "token_type": "bearer",

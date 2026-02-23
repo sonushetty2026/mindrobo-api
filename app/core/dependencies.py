@@ -1,5 +1,6 @@
 """FastAPI dependencies for authentication."""
 
+from typing import List
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -61,3 +62,29 @@ async def get_current_user(
         )
     
     return user
+
+
+def require_role(*roles: str):
+    """Dependency factory that checks if user has one of the required roles.
+    
+    Usage:
+        require_admin = require_role("admin", "superadmin")
+        
+        @router.get("/admin-only")
+        async def admin_route(user: User = Depends(require_admin)):
+            ...
+    """
+    async def role_checker(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied. Required role: {', '.join(roles)}"
+            )
+        return current_user
+    
+    return role_checker
+
+
+# Pre-configured role dependencies
+require_admin = require_role("admin", "superadmin")
+require_superadmin = require_role("superadmin")
