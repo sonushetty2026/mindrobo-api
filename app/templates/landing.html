@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindRobo — Your AI Receptionist</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+  }
+  
+  /* Navigation */
+  nav {
+    background: #1e293b;
+    border-bottom: 1px solid #334155;
+    padding: 16px 24px;
+  }
+  
+  .nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #06b6d4;
+    text-decoration: none;
+  }
+  
+  .nav-links {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+  
+  .nav-link {
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: color 0.2s;
+  }
+  
+  .nav-link:hover {
+    color: #e2e8f0;
+  }
+  
+  .btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+  }
+  
+  .btn-primary {
+    background: linear-gradient(135deg, #06b6d4, #3b82f6);
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(6, 182, 212, 0.3);
+  }
+  
+  /* Hero Section */
+  .hero {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 80px 24px;
+    text-align: center;
+  }
+  
+  .hero h1 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin-bottom: 24px;
+    background: linear-gradient(135deg, #38bdf8, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+  }
+  
+  .hero .subtitle {
+    font-size: 1.3rem;
+    color: #94a3b8;
+    margin-bottom: 40px;
+    line-height: 1.6;
+  }
+  
+  .hero .cta {
+    display: inline-block;
+    padding: 16px 40px;
+    font-size: 1.1rem;
+  }
+  
+  /* How It Works */
+  .section {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 80px 24px;
+  }
+  
+  .section-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 60px;
+    color: #e2e8f0;
+  }
+  
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 40px;
+  }
+  
+  .step {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 32px;
+    text-align: center;
+    transition: transform 0.2s;
+  }
+  
+  .step:hover {
+    transform: translateY(-4px);
+    border-color: #06b6d4;
+  }
+  
+  .step-number {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #06b6d4, #3b82f6);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 auto 20px;
+  }
+  
+  .step h3 {
+    font-size: 1.3rem;
+    margin-bottom: 12px;
+    color: #e2e8f0;
+  }
+  
+  .step p {
+    color: #94a3b8;
+    line-height: 1.6;
+  }
+  
+  /* Pricing */
+  .pricing {
+    background: #1e293b;
+    border: 2px solid #06b6d4;
+    border-radius: 20px;
+    padding: 48px;
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  
+  .price {
+    font-size: 4rem;
+    font-weight: 800;
+    color: #06b6d4;
+    margin-bottom: 8px;
+  }
+  
+  .price-period {
+    font-size: 1.1rem;
+    color: #94a3b8;
+    margin-bottom: 32px;
+  }
+  
+  .features {
+    text-align: left;
+    margin-bottom: 32px;
+  }
+  
+  .feature {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #334155;
+  }
+  
+  .feature:last-child {
+    border-bottom: none;
+  }
+  
+  .feature-icon {
+    color: #22c55e;
+    font-size: 1.2rem;
+  }
+  
+  .industries {
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 40px;
+  }
+  
+  .industries h4 {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 16px;
+  }
+  
+  .industry-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+  }
+  
+  .industry-tag {
+    background: rgba(6, 182, 212, 0.1);
+    color: #06b6d4;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+  }
+  
+  /* Footer */
+  footer {
+    background: #1e293b;
+    border-top: 1px solid #334155;
+    padding: 40px 24px;
+    margin-top: 80px;
+  }
+  
+  .footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  
+  .footer-links {
+    display: flex;
+    gap: 24px;
+  }
+  
+  .footer-link {
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  
+  .footer-link:hover {
+    color: #e2e8f0;
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .hero h1 {
+      font-size: 2.5rem;
+    }
+    
+    .hero .subtitle {
+      font-size: 1.1rem;
+    }
+    
+    .section-title {
+      font-size: 2rem;
+    }
+    
+    .steps {
+      grid-template-columns: 1fr;
+    }
+    
+    .pricing {
+      padding: 32px 24px;
+    }
+    
+    .price {
+      font-size: 3rem;
+    }
+    
+    .footer-content {
+      flex-direction: column;
+      text-align: center;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav>
+  <div class="nav-container">
+    <a href="/" class="logo">📞 MindRobo</a>
+    <div class="nav-links">
+      <a href="/login" class="nav-link">Login</a>
+      <a href="/signup" class="btn btn-primary">Get Started</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero">
+  <h1>Your AI Receptionist<br>Never Miss a Call Again</h1>
+  <p class="subtitle">
+    MindRobo answers your business calls 24/7, books appointments,<br>
+    and captures every lead — so you can focus on the work.
+  </p>
+  <a href="/signup" class="btn btn-primary cta">Get Started Free</a>
+</section>
+
+<!-- How It Works -->
+<section class="section">
+  <h2 class="section-title">How It Works</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-number">1</div>
+      <h3>Set Up Your AI in 5 Minutes</h3>
+      <p>Tell us about your business, upload your service menu or website, and we'll train your AI receptionist instantly.</p>
+    </div>
+    <div class="step">
+      <div class="step-number">2</div>
+      <h3>Calls Get Answered Instantly</h3>
+      <p>When customers call, your AI receptionist answers professionally, gathers details, and handles requests 24/7.</p>
+    </div>
+    <div class="step">
+      <div class="step-number">3</div>
+      <h3>Leads Arrive Automatically</h3>
+      <p>Get instant SMS notifications with customer details, service requests, and booking info — ready to follow up.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section class="section">
+  <h2 class="section-title">Simple Pricing</h2>
+  <div class="pricing">
+    <div class="price">$49</div>
+    <div class="price-period">per month — everything included</div>
+    <div class="features">
+      <div class="feature">
+        <span class="feature-icon">✓</span>
+        <span>Unlimited calls answered 24/7</span>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">✓</span>
+        <span>Lead capture + SMS notifications</span>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">✓</span>
+        <span>Appointment scheduling integration</span>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">✓</span>
+        <span>Custom knowledge base (train on your site)</span>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">✓</span>
+        <span>Real-time dashboard + analytics</span>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">✓</span>
+        <span>Call transcripts + recordings</span>
+      </div>
+    </div>
+    <a href="/signup" class="btn btn-primary" style="width: 100%; display: block; text-align: center;">Start Your Free Trial</a>
+    
+    <div class="industries">
+      <h4>Perfect For Home Services</h4>
+      <div class="industry-tags">
+        <span class="industry-tag">Pool Service</span>
+        <span class="industry-tag">Roofing</span>
+        <span class="industry-tag">HVAC</span>
+        <span class="industry-tag">Landscaping</span>
+        <span class="industry-tag">Plumbing</span>
+        <span class="industry-tag">Cleaning</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-content">
+    <div style="color: #64748b; font-size: 0.9rem;">© 2026 MindRobo — AI-Powered Receptionist</div>
+    <div class="footer-links">
+      <a href="/api/v1/docs" class="footer-link">API Docs</a>
+      <a href="/login" class="footer-link">Login</a>
+      <a href="/signup" class="footer-link">Sign Up</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

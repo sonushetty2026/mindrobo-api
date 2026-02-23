@@ -1,9 +1,10 @@
 from pydantic_settings import BaseSettings
+import secrets
 
 class Settings(BaseSettings):
     APP_ENV: str = "development"
     SECRET_KEY: str = "changeme"
-    JWT_SECRET_KEY: str = "changeme-jwt-secret"  # For JWT tokens
+    JWT_SECRET_KEY: str = secrets.token_urlsafe(32) if not "JWT_SECRET_KEY" in globals() else "changeme-jwt-secret"
     DATABASE_URL: str
     RETELL_API_KEY: str = ""
     RETELL_WEBHOOK_SECRET: str = ""
@@ -20,6 +21,11 @@ class Settings(BaseSettings):
     STRIPE_API_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
     STRIPE_PRICE_ID: str = ""  # Price ID for $49/month subscription
+    
+    # SendGrid Email (for verification and password reset)
+    SENDGRID_API_KEY: str = ""
+    SENDGRID_FROM_EMAIL: str = "noreply@mindrobo.com"
+    SENDGRID_FROM_NAME: str = "MindRobo"
 
     class Config:
         env_file = ".env"

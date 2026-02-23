@@ -4,6 +4,7 @@ Handles password hashing, JWT token generation/validation, and user authenticati
 """
 
 import logging
+import uuid
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
@@ -21,7 +22,11 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__defaul
 
 # JWT settings
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
+
+# Token expiry settings
+VERIFICATION_TOKEN_EXPIRE_HOURS = 24
+RESET_TOKEN_EXPIRE_HOURS = 24
 
 
 def _truncate_password(password: str) -> str:
@@ -69,6 +74,20 @@ def decode_access_token(token: str) -> Optional[dict]:
         return None
 
 
+def generate_verification_token() -> tuple[str, datetime]:
+    """Generate a verification token and its expiry time."""
+    token = str(uuid.uuid4())
+    expires = datetime.utcnow() + timedelta(hours=VERIFICATION_TOKEN_EXPIRE_HOURS)
+    return token, expires
+
+
+def generate_reset_token() -> tuple[str, datetime]:
+    """Generate a password reset token and its expiry time."""
+    token = str(uuid.uuid4())
+    expires = datetime.utcnow() + timedelta(hours=RESET_TOKEN_EXPIRE_HOURS)
+    return token, expires
+
+
 async def authenticate_user(db: AsyncSession, email: str, password: str) -> Optional[User]:
     """Authenticate a user by email and password."""
     result = await db.execute(select(User).where(User.email == email))
@@ -86,4 +105,26 @@ async def authenticate_user(db: AsyncSession, email: str, password: str) -> Opti
 async def get_user_by_email(db: AsyncSession, email: str) -> Optional[User]:
     """Fetch a user by email."""
     result = await db.execute(select(User).where(User.email == email))
+    return result.scalar_one_or_none()
+
+
+async def get_user_by_verification_token(db: AsyncSession, token: str) -> Optional[User]:
+    """Fetch a user by verification token."""
+    result = await db.execute(
+        select(User).where(
+            User.verification_token == token,
+            User.verification_expires > datetime.utcnow()
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_user_by_reset_token(db: AsyncSession, token: str) -> Optional[User]:
+    """Fetch a user by password reset token."""
+    result = await db.execute(
+        select(User).where(
+            User.reset_token == token,
+            User.reset_expires > datetime.utcnow()
+        )
+    )
     return result.scalar_one_or_none()
