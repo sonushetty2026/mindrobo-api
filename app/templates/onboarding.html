@@ -495,19 +495,21 @@
       if (file) {
         // PDF upload
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('pdf_file', file);
         formData.append('business_id', businessId);
-        response = await fetch('/api/v1/knowledge/extract', {
+        response = await fetch('/api/v1/ingest/preview', {
           method: 'POST',
           body: formData,
         });
         sourceInfo = { type: 'pdf', value: file.name };
       } else {
         // URL extraction
-        response = await fetch('/api/v1/knowledge/extract', {
+        const formData = new FormData();
+        formData.append('url', url);
+        formData.append('business_id', businessId);
+        response = await fetch('/api/v1/ingest/preview', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url, business_id: businessId }),
+          body: formData,
         });
         sourceInfo = { type: 'url', value: url };
       }
@@ -601,7 +603,7 @@
     
     try {
       const chunksToPublish = selectedChunks.map(i => extractedChunks[i]);
-      const response = await fetch('/api/v1/knowledge/publish', {
+      const response = await fetch('/api/v1/ingest/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
