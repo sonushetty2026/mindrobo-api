@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<parameter name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MindRobo — Onboarding</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -25,10 +25,12 @@
     gap: 16px;
     margin-bottom: 48px;
     justify-content: center;
+    flex-wrap: wrap;
   }
   .step {
     flex: 1;
-    max-width: 200px;
+    min-width: 140px;
+    max-width: 180px;
     text-align: center;
     padding: 16px;
     background: #1e293b;
@@ -66,7 +68,7 @@
     color: #fff;
   }
   .step-title {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: #94a3b8;
   }
   .step.active .step-title {
@@ -101,9 +103,15 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
+  label.required::after {
+    content: ' *';
+    color: #ef4444;
+  }
   input[type="text"],
   input[type="url"],
-  input[type="file"] {
+  input[type="file"],
+  textarea,
+  select {
     width: 100%;
     padding: 12px;
     border-radius: 8px;
@@ -112,9 +120,97 @@
     color: #e2e8f0;
     font-size: 1rem;
     outline: none;
+    font-family: inherit;
   }
-  input:focus {
+  textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+  input:focus,
+  textarea:focus,
+  select:focus {
     border-color: #38bdf8;
+  }
+  input.error,
+  textarea.error {
+    border-color: #ef4444;
+  }
+  .error-text {
+    color: #ef4444;
+    font-size: 0.85rem;
+    margin-top: 4px;
+    display: none;
+  }
+  .error-text.show {
+    display: block;
+  }
+  
+  /* Radio Group */
+  .radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .radio-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .radio-option:hover {
+    border-color: #38bdf8;
+    background: #1e3a52;
+  }
+  .radio-option.selected {
+    border-color: #38bdf8;
+    background: #1e3a52;
+  }
+  .radio-option input[type="radio"] {
+    width: auto;
+    cursor: pointer;
+  }
+  .radio-label {
+    flex: 1;
+    text-transform: none;
+    margin: 0;
+    letter-spacing: normal;
+    color: #e2e8f0;
+    cursor: pointer;
+  }
+  .radio-description {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-top: 4px;
+  }
+  
+  /* Preview Box */
+  .preview-box {
+    background: #1e293b;
+    border: 1px solid #38bdf8;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 16px;
+  }
+  .preview-label {
+    font-size: 0.85rem;
+    color: #38bdf8;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .preview-text {
+    color: #e2e8f0;
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+  .preview-placeholder {
+    color: #64748b;
+    font-style: italic;
   }
   
   /* File Upload */
@@ -318,6 +414,30 @@
     color: #e2e8f0;
     font-weight: 600;
   }
+  
+  /* Mobile Responsive */
+  @media (max-width: 768px) {
+    body {
+      padding: 16px;
+    }
+    h1 {
+      font-size: 1.5rem;
+    }
+    .steps {
+      gap: 8px;
+    }
+    .step {
+      min-width: 120px;
+      padding: 12px;
+    }
+    .button-group {
+      flex-direction: column;
+    }
+    .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
 </style>
 </head>
 <body>
@@ -333,10 +453,14 @@
     </div>
     <div class="step" id="step-indicator-2">
       <div class="step-number">2</div>
-      <div class="step-title">Review</div>
+      <div class="step-title">Personality</div>
     </div>
     <div class="step" id="step-indicator-3">
       <div class="step-number">3</div>
+      <div class="step-title">Review</div>
+    </div>
+    <div class="step" id="step-indicator-4">
+      <div class="step-number">4</div>
       <div class="step-title">Publish</div>
     </div>
   </div>
@@ -373,8 +497,79 @@
     </div>
   </div>
   
-  <!-- Step 2: Review -->
+  <!-- Step 2: Agent Personality -->
   <div class="content-section" id="step-2">
+    <p style="margin-bottom: 24px; color: #94a3b8;">
+      Configure how your AI receptionist introduces your business and handles incoming calls.
+    </p>
+    
+    <div class="form-group">
+      <label for="business-name" class="required">Business Name</label>
+      <input type="text" id="business-name" placeholder="Tampa Pool Pro">
+      <div class="error-text" id="business-name-error">Business name is required</div>
+    </div>
+    
+    <div class="form-group">
+      <label for="business-description" class="required">What You Do</label>
+      <textarea id="business-description" placeholder="We're a pool cleaning and maintenance company serving the Tampa Bay area. We handle residential and commercial pools."></textarea>
+      <div class="error-text" id="business-description-error">Description is required</div>
+    </div>
+    
+    <div class="form-group">
+      <label for="services-prices">Services & Prices (Optional)</label>
+      <textarea id="services-prices" placeholder="Pool cleaning - $150/visit&#10;Equipment repair - $85/hr&#10;Chemical balancing - included"></textarea>
+    </div>
+    
+    <div class="form-group">
+      <label for="owner-name">Owner's Name</label>
+      <input type="text" id="owner-name" placeholder="Mike Johnson">
+    </div>
+    
+    <div class="form-group">
+      <label>Lead Handling Preference</label>
+      <div class="radio-group">
+        <label class="radio-option" id="radio-appointment">
+          <input type="radio" name="lead-handling" value="appointment" checked>
+          <div>
+            <div class="radio-label">Book Appointment</div>
+            <div class="radio-description">AI will try to book directly if calendar is connected</div>
+          </div>
+        </label>
+        <label class="radio-option" id="radio-sms">
+          <input type="radio" name="lead-handling" value="sms">
+          <div>
+            <div class="radio-label">Send SMS to Owner</div>
+            <div class="radio-description">Notify owner via text message with lead details</div>
+          </div>
+        </label>
+        <label class="radio-option" id="radio-message">
+          <input type="radio" name="lead-handling" value="message">
+          <div>
+            <div class="radio-label">Take a Message</div>
+            <div class="radio-description">AI will collect contact info and reason for calling</div>
+          </div>
+        </label>
+      </div>
+    </div>
+    
+    <div class="preview-box">
+      <div class="preview-label">🎤 AI Greeting Preview</div>
+      <div class="preview-text" id="greeting-preview">
+        <span class="preview-placeholder">Fill out the form above to see how your AI will greet callers...</span>
+      </div>
+    </div>
+    
+    <div class="button-group">
+      <button class="btn btn-secondary" id="back-to-ingest">← Back</button>
+      <button class="btn btn-primary" id="save-personality-btn">
+        Save & Continue
+        <span class="spinner" style="display: none;" id="personality-spinner"></span>
+      </button>
+    </div>
+  </div>
+  
+  <!-- Step 3: Review -->
+  <div class="content-section" id="step-3">
     <p style="margin-bottom: 24px; color: #94a3b8;">
       Review the knowledge chunks we extracted. Check the boxes for information you want your AI to know.
     </p>
@@ -391,15 +586,15 @@
     </div>
     
     <div class="button-group">
-      <button class="btn btn-secondary" id="back-to-ingest">← Back</button>
+      <button class="btn btn-secondary" id="back-to-personality">← Back</button>
       <button class="btn btn-primary" id="continue-to-publish">
         Continue to Publish
       </button>
     </div>
   </div>
   
-  <!-- Step 3: Publish -->
-  <div class="content-section" id="step-3">
+  <!-- Step 4: Publish -->
+  <div class="content-section" id="step-4">
     <div class="summary-card">
       <h2 style="margin-bottom: 16px; color: #38bdf8;">Ready to Publish</h2>
       <div class="summary-item">
@@ -438,21 +633,42 @@
   let extractedChunks = [];
   let selectedChunks = [];
   let sourceInfo = { type: '', value: '' };
+  let personalityData = {
+    businessName: '',
+    description: '',
+    servicesPrices: '',
+    ownerName: '',
+    leadHandling: 'appointment'
+  };
   const businessId = new URLSearchParams(window.location.search).get('business_id') || '00000000-0000-0000-0000-000000000001';
   
   // Elements
-  const steps = [1, 2, 3];
+  const steps = [1, 2, 3, 4];
   const websiteUrlInput = document.getElementById('website-url');
   const pdfUploadInput = document.getElementById('pdf-upload');
   const fileLabel = document.getElementById('file-label');
   const fileNameEl = document.getElementById('file-name');
   const extractBtn = document.getElementById('extract-btn');
   const extractSpinner = document.getElementById('extract-spinner');
+  
+  // Personality form elements
+  const businessNameInput = document.getElementById('business-name');
+  const businessDescriptionInput = document.getElementById('business-description');
+  const servicesPricesInput = document.getElementById('services-prices');
+  const ownerNameInput = document.getElementById('owner-name');
+  const leadHandlingRadios = document.querySelectorAll('input[name="lead-handling"]');
+  const greetingPreview = document.getElementById('greeting-preview');
+  const savePersonalityBtn = document.getElementById('save-personality-btn');
+  const personalitySpinner = document.getElementById('personality-spinner');
+  const businessNameError = document.getElementById('business-name-error');
+  const businessDescriptionError = document.getElementById('business-description-error');
+  
   const selectAllCheckbox = document.getElementById('select-all');
   const chunksContainer = document.getElementById('chunks-container');
   const selectedCountEl = document.getElementById('selected-count');
   const continueToPublishBtn = document.getElementById('continue-to-publish');
   const backToIngestBtn = document.getElementById('back-to-ingest');
+  const backToPersonalityBtn = document.getElementById('back-to-personality');
   const backToReviewBtn = document.getElementById('back-to-review');
   const publishBtn = document.getElementById('publish-btn');
   const publishSpinner = document.getElementById('publish-spinner');
@@ -529,13 +745,119 @@
         throw new Error('No content could be extracted from this source.');
       }
       
-      renderChunks();
-      goToStep(2);
+      goToStep(2); // Go to personality step
     } catch (error) {
       showError(error.message);
     } finally {
       extractBtn.disabled = false;
       extractSpinner.style.display = 'none';
+    }
+  });
+  
+  // Personality form - live preview update
+  function updateGreetingPreview() {
+    const business = businessNameInput.value.trim();
+    const owner = ownerNameInput.value.trim();
+    
+    if (!business) {
+      greetingPreview.innerHTML = '<span class="preview-placeholder">Fill out the form above to see how your AI will greet callers...</span>';
+      return;
+    }
+    
+    let greeting = `Hi, thanks for calling ${business}!`;
+    
+    if (owner) {
+      greeting += ` I'm ${owner}'s AI assistant.`;
+    } else {
+      greeting += ` I'm the AI assistant.`;
+    }
+    
+    greeting += ' How can I help you today?';
+    
+    greetingPreview.textContent = greeting;
+  }
+  
+  businessNameInput.addEventListener('input', updateGreetingPreview);
+  ownerNameInput.addEventListener('input', updateGreetingPreview);
+  
+  // Radio button styling
+  document.querySelectorAll('.radio-option').forEach(option => {
+    option.addEventListener('click', () => {
+      document.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('selected'));
+      option.classList.add('selected');
+      option.querySelector('input[type="radio"]').checked = true;
+    });
+  });
+  
+  // Save personality button
+  savePersonalityBtn.addEventListener('click', async () => {
+    hideMessages();
+    
+    // Validation
+    const businessName = businessNameInput.value.trim();
+    const description = businessDescriptionInput.value.trim();
+    
+    let hasError = false;
+    
+    if (!businessName) {
+      businessNameInput.classList.add('error');
+      businessNameError.classList.add('show');
+      hasError = true;
+    } else {
+      businessNameInput.classList.remove('error');
+      businessNameError.classList.remove('show');
+    }
+    
+    if (!description) {
+      businessDescriptionInput.classList.add('error');
+      businessDescriptionError.classList.add('show');
+      hasError = true;
+    } else {
+      businessDescriptionInput.classList.remove('error');
+      businessDescriptionError.classList.remove('show');
+    }
+    
+    if (hasError) {
+      showError('Please fill in all required fields.');
+      return;
+    }
+    
+    // Collect data
+    personalityData = {
+      businessName: businessName,
+      description: description,
+      servicesPrices: servicesPricesInput.value.trim(),
+      ownerName: ownerNameInput.value.trim(),
+      leadHandling: document.querySelector('input[name="lead-handling"]:checked').value
+    };
+    
+    savePersonalityBtn.disabled = true;
+    personalitySpinner.style.display = 'inline-block';
+    
+    try {
+      // POST to backend API
+      const response = await fetch(`/api/v1/business/${businessId}/personality`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(personalityData),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        const errorMsg = Array.isArray(error.detail) 
+          ? error.detail.map(e => e.msg || e.message || JSON.stringify(e)).join(', ')
+          : (error.detail || 'Failed to save personality settings');
+        throw new Error(errorMsg);
+      }
+      
+      // Success - proceed to review step
+      renderChunks();
+      goToStep(3);
+    } catch (error) {
+      showError(error.message);
+    } finally {
+      savePersonalityBtn.disabled = false;
+      personalitySpinner.style.display = 'none';
     }
   });
   
@@ -586,6 +908,7 @@
   
   // Navigation
   backToIngestBtn.addEventListener('click', () => goToStep(1));
+  backToPersonalityBtn.addEventListener('click', () => goToStep(2));
   continueToPublishBtn.addEventListener('click', () => {
     if (selectedChunks.length === 0) {
       showError('Please select at least one chunk to publish.');
@@ -594,9 +917,9 @@
     summarySourceEl.textContent = sourceInfo.type === 'pdf' ? sourceInfo.value : sourceInfo.value;
     summaryChunksEl.textContent = selectedChunks.length;
     summaryBusinessEl.textContent = businessId;
-    goToStep(3);
+    goToStep(4);
   });
-  backToReviewBtn.addEventListener('click', () => goToStep(2));
+  backToReviewBtn.addEventListener('click', () => goToStep(3));
   
   // Publish button
   publishBtn.addEventListener('click', async () => {
@@ -682,6 +1005,7 @@
   
   // Initialize
   summaryBusinessEl.textContent = businessId;
+  document.querySelector('.radio-option').classList.add('selected');
 </script>
 </body>
 </html>
