@@ -48,3 +48,4 @@ class Business(Base):
     
     # Relationships
     users = relationship("User", back_populates="business")
+    leads = relationship("Lead", back_populates="business")

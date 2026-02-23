@@ -11,7 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.call import Call
 from app.models.business import Business
+from app.models.lead import Lead, LeadSource
 from app.services.sms import send_caller_confirmation, send_owner_summary
+from app.services.email_service import email_service
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +72,52 @@ async def save_call(db: AsyncSession, call_data: dict, lead: dict) -> Call:
     await db.commit()
     await db.refresh(call)
     logger.info("Call saved: %s → %s", call.call_id, outcome)
+    
+    # Create Lead record if we have enough information
+    if outcome == "lead_captured" and call_data.get("agent_id"):
+        try:
+            business = await lookup_business(db, call_data.get("agent_id"))
+            if business and (lead.get("lead_name") or lead.get("service_type")):
+                lead_record = Lead(
+                    business_id=business.id,
+                    caller_name=lead.get("lead_name") or "Unknown",
+                    caller_phone=call_data.get("from_number", ""),
+                    service_needed=lead.get("service_type"),
+                    notes=lead.get("summary"),
+                    source=LeadSource.CALL,
+                )
+                db.add(lead_record)
+                await db.commit()
+                await db.refresh(lead_record)
+                logger.info("Lead created: %s for business %s", lead_record.id, business.id)
+                
+                # Send email notification to owner
+                if business.owner_email:
+                    try:
+                        await email_service.send_lead_notification(
+                            owner_email=business.owner_email,
+                            business_name=business.name,
+                            lead_name=lead.get("lead_name") or "Unknown",
+                            lead_phone=call_data.get("from_number", ""),
+                            service_needed=lead.get("service_type"),
+                        )
+                    except Exception as e:
+                        logger.error("Failed to send lead email notification: %s", e)
+                
+                # Send SMS to owner
+                if business.owner_phone:
+                    try:
+                        service_text = f" needs {lead.get('service_type')}" if lead.get('service_type') else ""
+                        from app.services.sms import _send_sms
+                        await _send_sms(
+                            to=business.owner_phone,
+                            body=f"New lead: {lead.get('lead_name') or 'Unknown'}{service_text}. Call: {call_data.get('from_number', '')}"
+                        )
+                    except Exception as e:
+                        logger.error("Failed to send lead SMS notification: %s", e)
+        except Exception as e:
+            logger.error("Failed to create lead record: %s", e)
+    
     return call
 
 
