@@ -25,5 +25,20 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relationship
+    # Phase 3 fields
+    role = Column(String, nullable=False, default="user")
+    is_trial = Column(Boolean, nullable=False, default=True)
+    trial_ends_at = Column(DateTime, nullable=True)
+    is_paused = Column(Boolean, nullable=False, default=False)
+    paused_at = Column(DateTime, nullable=True)
+    plan_id = Column(UUID(as_uuid=True), ForeignKey("subscription_plans.id"), nullable=True)
+    fcm_token = Column(String, nullable=True)
+    last_login_at = Column(DateTime, nullable=True)
+    
+    # Relationships
     business = relationship("Business", back_populates="users")
+    plan = relationship("SubscriptionPlan", back_populates="users")
+    notifications = relationship("Notification", back_populates="user")
+    api_usage_logs = relationship("APIUsageLog", back_populates="user")
+    admin_actions = relationship("AdminAuditLog", foreign_keys="AdminAuditLog.admin_id", back_populates="admin")
+    audit_logs_as_target = relationship("AdminAuditLog", foreign_keys="AdminAuditLog.target_user_id", back_populates="target_user")
