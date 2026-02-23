@@ -407,8 +407,8 @@
   function fetchNotifications() {
     fetch('/api/v1/notifications')
       .then(r => r.json())
-      .then(notifications => {
-        allNotifications = notifications;
+      .then(data => {
+        allNotifications = data.items || [];
         filterNotifications();
       })
       .catch(err => {
@@ -424,7 +424,7 @@
   
   // Mark as read
   function markAsRead(notificationId) {
-    fetch(`/api/v1/notifications/${notificationId}/read`, { method: 'POST' })
+    fetch(`/api/v1/notifications/${notificationId}/read`, { method: 'PUT' })
       .then(() => {
         // Update local state
         const notification = allNotifications.find(n => n.id === notificationId);
@@ -439,7 +439,7 @@
   
   // Mark all as read
   markAllReadBtn.addEventListener('click', () => {
-    fetch('/api/v1/notifications/mark-all-read', { method: 'POST' })
+    fetch('/api/v1/notifications/mark-all-read', { method: 'PUT' })
       .then(() => {
         // Update local state
         allNotifications.forEach(n => n.is_read = true);

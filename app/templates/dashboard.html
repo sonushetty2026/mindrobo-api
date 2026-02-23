@@ -985,10 +985,11 @@
   
   // Fetch recent notifications (last 5)
   function fetchRecentNotifications() {
-    fetch('/api/v1/notifications/recent?limit=5')
+    fetch('/api/v1/notifications/?page=1&page_size=5')
       .then(r => r.json())
-      .then(notifications => {
+      .then(data => {
         const list = document.getElementById('notification-list');
+        const notifications = data.items || [];
         
         if (notifications.length === 0) {
           list.innerHTML = '<div style="padding: 20px; text-align: center; color: #64748b;">No notifications</div>';
@@ -1012,7 +1013,7 @@
   
   // Mark notification as read
   function markAsRead(notificationId) {
-    fetch(`/api/v1/notifications/${notificationId}/read`, { method: 'POST' })
+    fetch(`/api/v1/notifications/${notificationId}/read`, { method: 'PUT' })
       .then(() => {
         fetchNotificationCount();
         fetchRecentNotifications();
@@ -1024,7 +1025,7 @@
   // Mark all as read
   document.getElementById('mark-all-read').addEventListener('click', (e) => {
     e.preventDefault();
-    fetch('/api/v1/notifications/mark-all-read', { method: 'POST' })
+    fetch('/api/v1/notifications/mark-all-read', { method: 'PUT' })
       .then(() => {
         fetchNotificationCount();
         fetchRecentNotifications();
