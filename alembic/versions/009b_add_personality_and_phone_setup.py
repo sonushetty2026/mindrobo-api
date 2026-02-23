@@ -1,7 +1,7 @@
 """Add personality and phone setup fields
 
-Revision ID: 009
-Revises: 008
+Revision ID: 009b
+Revises: 009
 Create Date: 2026-02-23
 """
 from alembic import op
@@ -9,8 +9,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '009'
-down_revision = '008'
+revision = '009b'
+down_revision = '009'
 branch_labels = None
 depends_on = None
 

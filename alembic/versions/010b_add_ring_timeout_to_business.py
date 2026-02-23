@@ -1,15 +1,15 @@
 """Add ring_timeout_seconds to business
 
-Revision ID: 010
-Revises: 009
+Revision ID: 010b
+Revises: 010
 Create Date: 2026-02-23
 """
 from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '010'
-down_revision = '008'
+revision = '010b'
+down_revision = '010'
 branch_labels = None
 depends_on = None
 

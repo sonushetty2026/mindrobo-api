@@ -1,7 +1,7 @@
 """Add leads table
 
-Revision ID: 010_add_leads_table
-Revises: 009_add_appointments_and_availability
+Revision ID: 010
+Revises: 009b
 Create Date: 2025-02-23 06:30:00
 
 """
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers
-revision = '010_add_leads_table'
-down_revision = '009_add_appointments_and_availability'
+revision = '010'
+down_revision = '009b'
 branch_labels = None
 depends_on = None
 
