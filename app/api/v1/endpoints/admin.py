@@ -125,27 +125,6 @@ async def get_admin_analytics(
     
     total_revenue = mrr  # Simplified: could integrate with billing logs
     
-    # Growth chart (last 30 days)
-    growth_chart = []
-    for i in range(29, -1, -1):  # Last 30 days
-        day_start = today_start - timedelta(days=i)
-        day_end = day_start + timedelta(days=1)
-        
-        day_signups_result = await db.execute(
-            select(func.count(User.id)).where(
-                and_(
-                    User.created_at >= day_start,
-                    User.created_at < day_end
-                )
-            )
-        )
-        day_signups = day_signups_result.scalar() or 0
-        
-        growth_chart.append({
-            "date": day_start.strftime("%Y-%m-%d"),
-            "count": day_signups
-        })
-    
     return AdminAnalytics(
         total_users=total_users,
         signups_today=signups_today,
@@ -157,7 +136,6 @@ async def get_admin_analytics(
         trial_users=trial_users,
         paid_users=paid_users,
         expired_users=expired_users,
-        growth_chart=growth_chart,
     )
 
 
@@ -236,7 +214,6 @@ async def get_user_details(
 
 
 @router.put("/users/{user_id}", response_model=AdminUserOut)
-@router.patch("/users/{user_id}", response_model=AdminUserOut)
 async def update_user(
     user_id: UUID,
     update_data: AdminUserUpdate,
@@ -246,7 +223,6 @@ async def update_user(
     """Update user fields (role, is_paused, plan_id).
     
     Admin can modify user roles, pause status, and subscription plan.
-    Supports both PUT and PATCH methods.
     """
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()

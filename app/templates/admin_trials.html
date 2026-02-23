@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindRobo — Trial Monitor</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 24px;
+  }
+  
+  .container { max-width: 1400px; margin: 0 auto; }
+  
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  
+  h1 {
+    font-size: 2rem;
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .nav-links {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .nav-link {
+    padding: 10px 20px;
+    background: #1e293b;
+    color: #94a3b8;
+    text-decoration: none;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+  }
+  
+  .nav-link:hover {
+    background: #334155;
+    color: #e2e8f0;
+  }
+  
+  .nav-link.active {
+    background: #0ea5e9;
+    color: white;
+    border-color: #0ea5e9;
+  }
+  
+  /* Stats Grid */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+  
+  .stat-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 24px;
+  }
+  
+  .stat-label {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  
+  .stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #38bdf8;
+    margin-bottom: 4px;
+  }
+  
+  .stat-subtitle {
+    font-size: 0.85rem;
+    color: #64748b;
+  }
+  
+  /* Table */
+  .table-container {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  thead {
+    background: #334155;
+  }
+  
+  th, td {
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid #334155;
+  }
+  
+  th {
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+  }
+  
+  td {
+    color: #e2e8f0;
+  }
+  
+  tbody tr:hover {
+    background: #334155;
+  }
+  
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+  
+  /* Days Remaining Badges */
+  .days-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  
+  .days-badge.safe {
+    background: #22c55e;
+    color: white;
+  }
+  
+  .days-badge.warning {
+    background: #f59e0b;
+    color: white;
+  }
+  
+  .days-badge.critical {
+    background: #ef4444;
+    color: white;
+  }
+  
+  /* Status Badges */
+  .status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  
+  .status-badge.active {
+    background: #22c55e;
+    color: white;
+  }
+  
+  .status-badge.expired {
+    background: #ef4444;
+    color: white;
+  }
+  
+  /* Buttons */
+  .btn {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-right: 6px;
+  }
+  
+  .btn-primary {
+    background: #3b82f6;
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    background: #2563eb;
+  }
+  
+  .btn-warning {
+    background: #f59e0b;
+    color: white;
+  }
+  
+  .btn-warning:hover {
+    background: #d97706;
+  }
+  
+  .btn-success {
+    background: #22c55e;
+    color: white;
+  }
+  
+  .btn-success:hover {
+    background: #16a34a;
+  }
+  
+  /* Loading */
+  .loading {
+    text-align: center;
+    padding: 40px;
+    color: #64748b;
+  }
+  
+  .spinner {
+    border: 3px solid #334155;
+    border-top-color: #38bdf8;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 16px;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  /* Error */
+  .error {
+    background: #7f1d1d;
+    border: 1px solid #991b1b;
+    color: #fca5a5;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+  }
+  
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #64748b;
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    body { padding: 16px; }
+    h1 { font-size: 1.5rem; }
+    .stat-value { font-size: 2rem; }
+    table { font-size: 0.85rem; }
+    th, td { padding: 12px 8px; }
+    .btn { padding: 6px 10px; font-size: 0.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>⏳ Trial Monitor</h1>
+    <div class="nav-links">
+      <a href="/dashboard" class="nav-link">Dashboard</a>
+      <a href="/admin" class="nav-link">Admin</a>
+      <a href="/admin/users" class="nav-link">Users</a>
+      <a href="/admin/trials" class="nav-link active">Trials</a>
+      <a href="/logout" class="nav-link">Logout</a>
+    </div>
+  </div>
+
+  <div id="error-container"></div>
+
+  <div id="loading" class="loading">
+    <div class="spinner"></div>
+    <div>Loading trials...</div>
+  </div>
+
+  <div id="content" style="display: none;">
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Active Trials</div>
+        <div class="stat-value" id="active-trials">-</div>
+        <div class="stat-subtitle">Currently in trial period</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Conversion Rate</div>
+        <div class="stat-value" id="conversion-rate">-</div>
+        <div class="stat-subtitle">Trial → Paid conversions</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg Trial Length</div>
+        <div class="stat-value" id="avg-trial-length">-</div>
+        <div class="stat-subtitle">Days used on average</div>
+      </div>
+    </div>
+
+    <!-- Trials Table -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Started</th>
+            <th>Days Remaining</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="trials-table">
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="empty-state" class="empty" style="display: none;">
+    <div style="font-size: 3rem; margin-bottom: 16px;">⏳</div>
+    <div>No active trials</div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = window.location.origin;
+  let trials = [];
+
+  async function loadTrials() {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/login';
+        return;
+      }
+
+      // Fetch stats
+      const statsResponse = await fetch(`${API_BASE}/api/v1/admin/trials/stats`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!statsResponse.ok) {
+        if (statsResponse.status === 401) {
+          window.location.href = '/login';
+          return;
+        }
+        throw new Error(`HTTP ${statsResponse.status}`);
+      }
+
+      const stats = await statsResponse.json();
+      
+      document.getElementById('active-trials').textContent = stats.active_trials || 0;
+      document.getElementById('conversion-rate').textContent = `${stats.conversion_rate || 0}%`;
+      document.getElementById('avg-trial-length').textContent = `${stats.avg_trial_length || 0} days`;
+
+      // Fetch trials list
+      const trialsResponse = await fetch(`${API_BASE}/api/v1/admin/trials`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!trialsResponse.ok) throw new Error(`HTTP ${trialsResponse.status}`);
+
+      const trialsData = await trialsResponse.json();
+      trials = trialsData.trials || [];
+
+      if (trials.length === 0) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('empty-state').style.display = 'block';
+        return;
+      }
+
+      renderTrials();
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+    } catch (err) {
+      console.error('Load error:', err);
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error-container').innerHTML = `
+        <div class="error">⚠️ Failed to load trials: ${err.message}</div>
+      `;
+    }
+  }
+
+  function renderTrials() {
+    const tbody = document.getElementById('trials-table');
+
+    tbody.innerHTML = trials.map(trial => {
+      const started = new Date(trial.trial_started).toLocaleDateString();
+      const daysRemaining = trial.days_remaining;
+      
+      let daysBadgeClass = 'safe';
+      if (daysRemaining < 3) daysBadgeClass = 'critical';
+      else if (daysRemaining < 7) daysBadgeClass = 'warning';
+
+      const statusClass = trial.status === 'active' ? 'active' : 'expired';
+      
+      return `
+        <tr>
+          <td>${trial.email}</td>
+          <td>${started}</td>
+          <td><span class="days-badge ${daysBadgeClass}">${daysRemaining} days</span></td>
+          <td><span class="status-badge ${statusClass}">${trial.status}</span></td>
+          <td>
+            <button class="btn btn-primary" onclick="extendTrial('${trial.user_id}')">Extend (+7d)</button>
+            <button class="btn btn-warning" onclick="shortenTrial('${trial.user_id}')">Shorten (-3d)</button>
+            <button class="btn btn-success" onclick="convertToPaid('${trial.user_id}')">Convert</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  async function extendTrial(userId) {
+    if (!confirm('Extend trial by 7 days?')) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/api/v1/admin/trials/${userId}/extend`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ days: 7 })
+      });
+
+      if (!response.ok) throw new Error('Failed to extend trial');
+
+      await loadTrials();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  }
+
+  async function shortenTrial(userId) {
+    if (!confirm('Shorten trial by 3 days?')) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/api/v1/admin/trials/${userId}/shorten`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ days: 3 })
+      });
+
+      if (!response.ok) throw new Error('Failed to shorten trial');
+
+      await loadTrials();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  }
+
+  async function convertToPaid(userId) {
+    if (!confirm('Convert this trial user to paid? This will upgrade them to the Basic plan.')) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/api/v1/admin/trials/${userId}/convert`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ plan: 'basic' })
+      });
+
+      if (!response.ok) throw new Error('Failed to convert user');
+
+      await loadTrials();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  }
+
+  loadTrials();
+</script>
+
+</body>
+</html>

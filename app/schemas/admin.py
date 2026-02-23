@@ -7,12 +7,6 @@ from pydantic import BaseModel, Field
 
 
 # Analytics schemas
-class GrowthChartPoint(BaseModel):
-    """Single data point for growth chart."""
-    date: str = Field(description="Date in YYYY-MM-DD format")
-    count: int = Field(description="Number of signups on this date")
-
-
 class AdminAnalytics(BaseModel):
     """Admin dashboard analytics."""
     total_users: int
@@ -25,7 +19,6 @@ class AdminAnalytics(BaseModel):
     trial_users: int
     paid_users: int
     expired_users: int = Field(description="Users whose trial expired")
-    growth_chart: List[GrowthChartPoint] = Field(description="Signup growth over last 30 days")
 
 
 # User management schemas
