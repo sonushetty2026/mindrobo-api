@@ -16,6 +16,7 @@ from app.schemas.appointment import (
     AppointmentOut,
     AvailableSlotsResponse,
 )
+from app.services.email_service import email_service
 import os
 from twilio.rest import Client
 import logging
@@ -287,6 +288,20 @@ async def book_appointment(
             f"{appointment.appointment_date} at {requested_time}."
         )
         await send_sms_notification(appointment.customer_phone, customer_message)
+        
+        # Send email confirmation to customer if email provided
+        if appointment.customer_email:
+            try:
+                await email_service.send_appointment_confirmation(
+                    customer_email=appointment.customer_email,
+                    customer_name=appointment.customer_name,
+                    business_name=business.name,
+                    appointment_date=appointment.appointment_date.strftime("%A, %B %d, %Y"),
+                    appointment_time=requested_time,
+                    service=appointment.service_needed,
+                )
+            except Exception as e:
+                logger.error(f"Failed to send appointment confirmation email: {e}")
     
     return new_appointment
 
