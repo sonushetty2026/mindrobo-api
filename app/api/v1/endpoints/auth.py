@@ -29,6 +29,7 @@ from app.services.auth import (
     get_user_by_verification_token,
     get_user_by_reset_token,
 )
+from app.services.email_service import email_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -140,6 +141,13 @@ async def verify_email(data: VerifyEmail, db: AsyncSession = Depends(get_db)):
     
     logger.info("User verified: %s", user.email)
     
+    # Send welcome email
+    try:
+        await email_service.send_welcome_email(user.email, user.full_name or user.email)
+    except Exception as e:
+        logger.error("Failed to send welcome email to %s: %s", user.email, e)
+
+>>>>>>> origin/main
     return {"message": "Email verified successfully. You can now log in."}
 
 
