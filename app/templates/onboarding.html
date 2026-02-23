@@ -438,7 +438,7 @@
   let extractedChunks = [];
   let selectedChunks = [];
   let sourceInfo = { type: '', value: '' };
-  const businessId = new URLSearchParams(window.location.search).get('business_id') || 'demo-business-123';
+  const businessId = new URLSearchParams(window.location.search).get('business_id') || '00000000-0000-0000-0000-000000000001';
   
   // Elements
   const steps = [1, 2, 3];
@@ -516,7 +516,10 @@
       
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.detail || 'Failed to extract knowledge');
+        const errorMsg = Array.isArray(error.detail) 
+          ? error.detail.map(e => e.msg || e.message || JSON.stringify(e)).join(', ')
+          : (error.detail || 'Failed to extract knowledge');
+        throw new Error(errorMsg);
       }
       
       const data = await response.json();
@@ -614,7 +617,10 @@
       
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.detail || 'Failed to publish knowledge');
+        const errorMsg = Array.isArray(error.detail) 
+          ? error.detail.map(e => e.msg || e.message || JSON.stringify(e)).join(', ')
+          : (error.detail || 'Failed to publish knowledge');
+        throw new Error(errorMsg);
       }
       
       showSuccess(`✅ Success! ${selectedChunks.length} knowledge chunks published. Your AI is now trained.`);
