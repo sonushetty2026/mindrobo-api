@@ -97,3 +97,8 @@ class AdminTrialStats(BaseModel):
 class AdminTrialExtend(BaseModel):
     """Extend or shorten trial."""
     days: int = Field(description="Number of days to extend (positive) or shorten (negative)")
+
+
+class AdminTrialConvert(BaseModel):
+    """Convert trial user to paid."""
+    plan_id: UUID = Field(description="Subscription plan ID to assign")

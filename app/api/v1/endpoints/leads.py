@@ -9,7 +9,9 @@ from sqlalchemy import select, and_, func
 from app.core.database import get_db
 from app.models.business import Business
 from app.models.lead import Lead, LeadStatus
+from app.models.user import User
 from app.schemas.lead import LeadCreate, LeadOut, LeadStatusUpdate, LeadStatsOut
+from app.core.trial_limits import check_trial_limit_leads
 import logging
 
 router = APIRouter()
@@ -21,13 +23,23 @@ async def create_lead(
     lead_data: LeadCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    """Create a new lead."""
+    """Create a new lead (with trial limit check)."""
     # Verify business exists
     result = await db.execute(select(Business).where(Business.id == lead_data.business_id))
     business = result.scalar_one_or_none()
     
     if not business:
         raise HTTPException(status_code=404, detail="Business not found")
+    
+    # Get the business owner (user) to check trial status
+    user_result = await db.execute(
+        select(User).where(User.business_id == lead_data.business_id)
+    )
+    user = user_result.scalars().first()
+    
+    if user:
+        # Check trial limits before creating lead
+        await check_trial_limit_leads(db, lead_data.business_id, user)
     
     # Create lead
     lead = Lead(

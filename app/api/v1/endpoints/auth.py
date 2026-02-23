@@ -1,6 +1,7 @@
 """Authentication endpoints for MindRobo."""
 
 import logging
+from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,6 +31,7 @@ from app.services.auth import (
     get_user_by_reset_token,
 )
 from app.services.email_service import email_service
+from app.services.notification_service import create_welcome_notification
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -60,7 +62,8 @@ async def register(user_data: UserRegister, db: AsyncSession = Depends(get_db)):
     db.add(business)
     await db.flush()  # Get business.id without committing
     
-    # Create the user (unverified)
+    # Create the user (unverified) with trial settings
+    trial_ends_at = datetime.utcnow() + timedelta(days=14)
     user = User(
         email=user_data.email,
         hashed_password=hash_password(user_data.password),
@@ -70,10 +73,16 @@ async def register(user_data: UserRegister, db: AsyncSession = Depends(get_db)):
         is_verified=False,
         verification_token=verification_token,
         verification_expires=verification_expires,
+        is_trial=True,
+        trial_ends_at=trial_ends_at,
+        is_paused=False,
     )
     db.add(user)
     await db.commit()
     await db.refresh(user)
+    
+    # Create welcome notification
+    await create_welcome_notification(db, user.id)
     
     # TODO: Send email via SendGrid (stubbed for now)
     logger.info(
