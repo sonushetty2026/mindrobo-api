@@ -2,7 +2,7 @@
 
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.database import async_session
+from app.core.database import AsyncSessionLocal
 from app.models.user import User
 from app.models.business import Business
 from app.services.auth import hash_password, get_user_by_email
@@ -16,7 +16,7 @@ TEST_BUSINESS_NAME = "MindRobo Test Business"
 
 async def seed_test_account():
     """Create a pre-verified test account on startup if it doesn't exist."""
-    async with async_session() as db:
+    async with AsyncSessionLocal() as db:
         try:
             # Check if test account already exists
             existing_user = await get_user_by_email(db, TEST_EMAIL)

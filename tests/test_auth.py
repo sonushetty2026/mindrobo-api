@@ -2,6 +2,8 @@
 
 import pytest
 from app.services.auth import hash_password, verify_password
+from app.models.user import User
+from sqlalchemy import select
 
 
 def test_password_hashing():
@@ -21,7 +23,7 @@ def test_password_hashing():
 
 @pytest.mark.asyncio
 async def test_register_creates_user_and_business(client, db):
-    """Registration should create both a user and a business."""
+    """Registration should create both a user and a business (unverified)."""
     resp = await client.post("/api/v1/auth/register", json={
         "email": "test@example.com",
         "password": "testpass123",
@@ -31,15 +33,20 @@ async def test_register_creates_user_and_business(client, db):
     
     assert resp.status_code == 201
     data = resp.json()
-    assert "access_token" in data
-    assert "business_id" in data
-    assert "user_id" in data
-    assert data["token_type"] == "bearer"
+    assert "message" in data
+    assert "verify" in data["message"].lower()
+    
+    # Check user exists in DB (unverified)
+    result = await db.execute(select(User).where(User.email == "test@example.com"))
+    user = result.scalar_one_or_none()
+    assert user is not None
+    assert user.is_verified is False
+    assert user.verification_token is not None
 
 
 @pytest.mark.asyncio
 async def test_register_duplicate_email_fails(client, db):
-    """Registering the same email twice should fail."""
+    """Registering the same email twice should fail with 409."""
     user_data = {
         "email": "duplicate@example.com",
         "password": "testpass123",
@@ -52,45 +59,77 @@ async def test_register_duplicate_email_fails(client, db):
     
     # Second registration fails
     resp2 = await client.post("/api/v1/auth/register", json=user_data)
-    assert resp2.status_code == 400
+    assert resp2.status_code == 409
     assert "already registered" in resp2.json()["detail"].lower()
 
 
 @pytest.mark.asyncio
-async def test_login_with_valid_credentials(client, db):
-    """Login should return a token for valid credentials."""
-    # Register first
+async def test_login_with_unverified_account_fails(client, db):
+    """Login should return 403 for unverified accounts."""
+    # Register (unverified)
     await client.post("/api/v1/auth/register", json={
-        "email": "login@example.com",
+        "email": "unverified@example.com",
         "password": "mypassword",
         "business_name": "My Business"
     })
     
-    # Login
+    # Try to login
     resp = await client.post("/api/v1/auth/login", json={
-        "email": "login@example.com",
+        "email": "unverified@example.com",
         "password": "mypassword"
+    })
+    
+    assert resp.status_code == 403
+    assert "verify" in resp.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_verify_email_activates_account(client, db):
+    """Email verification should activate the account."""
+    # Register
+    await client.post("/api/v1/auth/register", json={
+        "email": "verify@example.com",
+        "password": "testpass",
+        "business_name": "Verify Business"
+    })
+    
+    # Get verification token from DB
+    result = await db.execute(select(User).where(User.email == "verify@example.com"))
+    user = result.scalar_one()
+    token = user.verification_token
+    
+    # Verify email
+    resp = await client.post("/api/v1/auth/verify-email", json={"token": token})
+    assert resp.status_code == 200
+    assert "verified" in resp.json()["message"].lower()
+    
+    # Check user is now verified
+    await db.refresh(user)
+    assert user.is_verified is True
+    assert user.verification_token is None
+
+
+@pytest.mark.asyncio
+async def test_login_with_verified_account(client, db, verified_user):
+    """Login should return a token for verified accounts."""
+    resp = await client.post("/api/v1/auth/login", json={
+        "email": verified_user["email"],
+        "password": "testpass123"
     })
     
     assert resp.status_code == 200
     data = resp.json()
     assert "access_token" in data
     assert data["token_type"] == "bearer"
+    assert "user_id" in data
+    assert "business_id" in data
 
 
 @pytest.mark.asyncio
-async def test_login_with_invalid_credentials(client, db):
+async def test_login_with_invalid_credentials(client, db, verified_user):
     """Login should fail with wrong password."""
-    # Register first
-    await client.post("/api/v1/auth/register", json={
-        "email": "fail@example.com",
-        "password": "correctpass",
-        "business_name": "Test Business"
-    })
-    
-    # Login with wrong password
     resp = await client.post("/api/v1/auth/login", json={
-        "email": "fail@example.com",
+        "email": verified_user["email"],
         "password": "wrongpass"
     })
     
@@ -98,31 +137,115 @@ async def test_login_with_invalid_credentials(client, db):
 
 
 @pytest.mark.asyncio
-async def test_protected_endpoint_requires_auth(client, db):
-    """Protected endpoints should reject requests without a token."""
-    # Test a truly protected endpoint (/me requires auth, while /calls/ has optional auth)
-    resp = await client.get("/api/v1/businesses/me")
-    # HTTPBearer can return 400 (missing header) or 403 depending on implementation
-    assert resp.status_code in [400, 403]
+async def test_forgot_password_generates_reset_token(client, db, verified_user):
+    """Forgot password should generate a reset token."""
+    resp = await client.post("/api/v1/auth/forgot-password", json={
+        "email": verified_user["email"]
+    })
+    
+    assert resp.status_code == 200
+    assert "message" in resp.json()
+    
+    # Check reset token was generated
+    result = await db.execute(select(User).where(User.email == verified_user["email"]))
+    user = result.scalar_one()
+    assert user.reset_token is not None
+    assert user.reset_expires is not None
 
 
 @pytest.mark.asyncio
-async def test_protected_endpoint_with_valid_token(client, db):
-    """Protected endpoints should work with a valid token."""
-    # Register and get token
-    register_resp = await client.post("/api/v1/auth/register", json={
-        "email": "protected@example.com",
-        "password": "testpass",
-        "business_name": "Protected Test Co"
+async def test_reset_password_changes_password(client, db, verified_user):
+    """Password reset should update the password."""
+    # Request reset
+    await client.post("/api/v1/auth/forgot-password", json={
+        "email": verified_user["email"]
     })
-    token = register_resp.json()["access_token"]
     
-    # Access protected endpoint - should return user's business
+    # Get reset token from DB
+    result = await db.execute(select(User).where(User.email == verified_user["email"]))
+    user = result.scalar_one()
+    token = user.reset_token
+    
+    # Reset password
+    new_password = "newpassword123"
+    resp = await client.post("/api/v1/auth/reset-password", json={
+        "token": token,
+        "new_password": new_password
+    })
+    
+    assert resp.status_code == 200
+    assert "reset" in resp.json()["message"].lower()
+    
+    # Old password should not work
+    resp = await client.post("/api/v1/auth/login", json={
+        "email": verified_user["email"],
+        "password": "testpass123"
+    })
+    assert resp.status_code == 401
+    
+    # New password should work
+    resp = await client.post("/api/v1/auth/login", json={
+        "email": verified_user["email"],
+        "password": new_password
+    })
+    assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_resend_verification_generates_new_token(client, db):
+    """Resend verification should generate a new token."""
+    # Register
+    await client.post("/api/v1/auth/register", json={
+        "email": "resend@example.com",
+        "password": "testpass",
+        "business_name": "Resend Business"
+    })
+    
+    # Get old token
+    result = await db.execute(select(User).where(User.email == "resend@example.com"))
+    user = result.scalar_one()
+    old_token = user.verification_token
+    
+    # Resend verification
+    resp = await client.post("/api/v1/auth/resend-verification", json={
+        "email": "resend@example.com"
+    })
+    
+    assert resp.status_code == 200
+    
+    # Check new token was generated
+    await db.refresh(user)
+    assert user.verification_token != old_token
+
+
+@pytest.mark.asyncio
+async def test_resend_verification_fails_for_verified_account(client, db, verified_user):
+    """Resend verification should fail for already verified accounts."""
+    resp = await client.post("/api/v1/auth/resend-verification", json={
+        "email": verified_user["email"]
+    })
+    
+    assert resp.status_code == 400
+    assert "already verified" in resp.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_protected_endpoint_requires_auth(client, db):
+    """Protected endpoints should reject requests without a token."""
+    resp = await client.get("/api/v1/auth/me")
+    # HTTPBearer can return 403 (missing header) or 401 depending on implementation
+    assert resp.status_code in [401, 403]
+
+
+@pytest.mark.asyncio
+async def test_protected_endpoint_with_valid_token(client, db, verified_user):
+    """Protected endpoints should work with a valid token."""
     resp = await client.get(
-        "/api/v1/businesses/me",
-        headers={"Authorization": f"Bearer {token}"}
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {verified_user['token']}"}
     )
     
     assert resp.status_code == 200
     data = resp.json()
-    assert data["name"] == "Protected Test Co"
+    assert data["email"] == verified_user["email"]
+    assert data["is_verified"] is True

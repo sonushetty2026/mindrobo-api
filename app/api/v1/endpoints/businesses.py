@@ -7,17 +7,67 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import get_db
 from app.core.deps import get_current_user, get_current_user_optional
-from app.models.business import Business
+from app.models.business import Business, LeadHandlingPreference
 from app.models.user import User
 from app.schemas.business import (
     BusinessCreate, 
     BusinessOut, 
     BusinessUpdate,
+    PersonalityConfig,
+    PersonalityOut,
     CallSettingsConfig,
     CallSettingsOut,
 )
 
 router = APIRouter()
+
+
+def generate_system_prompt(
+    business_name: str,
+    business_description: str,
+    services_and_prices: str,
+    owner_name: str | None,
+    lead_handling_preference: LeadHandlingPreference,
+) -> tuple[str, str]:
+    """Generate custom greeting and system prompt from personality config.
+    
+    Returns:
+        (custom_greeting, system_prompt)
+    """
+    # Generate custom greeting
+    custom_greeting = (
+        f"Thank you for calling {business_name}! "
+        f"I'm your AI assistant here to help you. How can I assist you today?"
+    )
+    
+    # Generate lead handling instruction
+    lead_instructions = {
+        LeadHandlingPreference.BOOK_APPOINTMENT: 
+            "offer to schedule an appointment at a convenient time",
+        LeadHandlingPreference.SEND_SMS: 
+            "offer to send them a text message with more details and follow up",
+        LeadHandlingPreference.TAKE_MESSAGE: 
+            "take a detailed message and let them know the owner will call back soon",
+    }
+    lead_handling_text = lead_instructions.get(
+        lead_handling_preference,
+        "help them with their inquiry"
+    )
+    
+    # Build system prompt
+    owner_text = f"The owner's name is {owner_name}. " if owner_name else ""
+    
+    system_prompt = (
+        f"You are an AI receptionist for {business_name}. "
+        f"{business_description} "
+        f"Services offered: {services_and_prices}. "
+        f"{owner_text}"
+        f"When a caller needs help, {lead_handling_text}. "
+        f"Always be friendly, professional, and helpful. "
+        f"Speak naturally and conversationally."
+    )
+    
+    return custom_greeting, system_prompt
 
 
 # Legacy endpoints (backward compatibility, optional auth)
@@ -130,6 +180,89 @@ async def update_my_business(
     return business
 
 
+# Personality endpoints (Issue #59)
+@router.put("/{business_id}/personality", response_model=PersonalityOut)
+async def save_personality(
+    business_id: UUID,
+    personality: PersonalityConfig,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Save agent personality configuration and auto-generate prompts.
+    
+    Generates custom_greeting and system_prompt from the personality fields.
+    """
+    # Verify user owns this business
+    if current_user.business_id != business_id:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    result = await db.execute(select(Business).where(Business.id == business_id))
+    business = result.scalar_one_or_none()
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    # Update personality fields
+    business.business_description = personality.business_description
+    business.services_and_prices = personality.services_and_prices
+    business.lead_handling_preference = personality.lead_handling_preference
+    
+    # Update owner_name if provided
+    if personality.owner_name:
+        business.owner_name = personality.owner_name
+    
+    # Generate custom greeting and system prompt
+    custom_greeting, system_prompt = generate_system_prompt(
+        business_name=business.name,
+        business_description=personality.business_description,
+        services_and_prices=personality.services_and_prices,
+        owner_name=personality.owner_name or business.owner_name,
+        lead_handling_preference=personality.lead_handling_preference,
+    )
+    
+    business.custom_greeting = custom_greeting
+    business.system_prompt = system_prompt
+    
+    await db.commit()
+    await db.refresh(business)
+    
+    return PersonalityOut(
+        business_description=business.business_description,
+        services_and_prices=business.services_and_prices,
+        owner_name=business.owner_name,
+        lead_handling_preference=business.lead_handling_preference,
+        custom_greeting=business.custom_greeting,
+        system_prompt=business.system_prompt,
+    )
+
+
+@router.get("/{business_id}/personality", response_model=PersonalityOut)
+async def get_personality(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Retrieve agent personality configuration."""
+    # Verify user owns this business
+    if current_user.business_id != business_id:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    result = await db.execute(select(Business).where(Business.id == business_id))
+    business = result.scalar_one_or_none()
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    return PersonalityOut(
+        business_description=business.business_description,
+        services_and_prices=business.services_and_prices,
+        owner_name=business.owner_name,
+        lead_handling_preference=business.lead_handling_preference,
+        custom_greeting=business.custom_greeting,
+        system_prompt=business.system_prompt,
+    )
+
+
 # Call settings endpoints (Issue #62)
 @router.put("/{business_id}/call-settings", response_model=CallSettingsOut)
 async def save_call_settings(
@@ -180,6 +313,6 @@ async def get_call_settings(
         raise HTTPException(status_code=404, detail="Business not found")
     
     return CallSettingsOut(
-        ring_timeout_seconds=int(business.ring_timeout_seconds) if business.ring_timeout_seconds else 20,
+        ring_timeout_seconds=int(business.ring_timeout_seconds) if business.ring_timeout_seconds else None,
         owner_phone=business.owner_phone,
     )
