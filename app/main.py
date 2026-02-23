@@ -135,3 +135,21 @@ async def appointments_page():
 @app.get("/phone-setup", response_class=HTMLResponse)
 async def phone_setup_page():
     return load_template("phone-setup.html")
+
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_dashboard_page():
+    """Serve the admin dashboard page."""
+    return load_template("admin_dashboard.html")
+
+
+@app.get("/admin/users", response_class=HTMLResponse)
+async def admin_users_page():
+    """Serve the admin user management page."""
+    return load_template("admin_users.html")
+
+
+@app.get("/admin/trials", response_class=HTMLResponse)
+async def admin_trials_page():
+    """Serve the admin trial monitor page."""
+    return load_template("admin_trials.html")
