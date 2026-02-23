@@ -1,0 +1,15 @@
+[Unit]
+Description=MindRobo GitHub Webhook Listener
+After=network.target
+
+[Service]
+Type=simple
+User=azureuser
+WorkingDirectory=/home/azureuser/mindrobo-api/deploy
+ExecStart=/home/azureuser/mindrobo-api/.venv/bin/python /home/azureuser/mindrobo-api/deploy/webhook_server.py
+EnvironmentFile=/home/azureuser/secrets/db.env
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
