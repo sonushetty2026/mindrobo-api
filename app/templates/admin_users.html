@@ -560,7 +560,7 @@
       const plan = document.getElementById('edit-plan').value;
 
       const response = await fetch(`${API_BASE}/api/v1/admin/users/${currentUserId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -584,7 +584,7 @@
       const newStatus = user.status === 'paused' ? 'active' : 'paused';
 
       const response = await fetch(`${API_BASE}/api/v1/admin/users/${userId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
