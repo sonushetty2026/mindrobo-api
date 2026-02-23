@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindRobo — Billing</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 24px;
+    min-height: 100vh;
+  }
+  
+  .container { max-width: 1000px; margin: 0 auto; }
+  
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  
+  h1 {
+    font-size: 2rem;
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  /* Navigation */
+  .nav {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  .nav-link {
+    padding: 8px 16px;
+    color: #94a3b8;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+  }
+  
+  .nav-link:hover {
+    color: #e2e8f0;
+    background: #1e293b;
+  }
+  
+  .nav-link.active {
+    color: #38bdf8;
+    background: #1e293b;
+  }
+  
+  /* Card */
+  .card {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 24px;
+    border: 1px solid #334155;
+  }
+  
+  .card h2 {
+    font-size: 1.5rem;
+    color: #38bdf8;
+    margin-bottom: 24px;
+  }
+  
+  /* Plan info */
+  .plan-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  
+  .plan-details {
+    flex: 1;
+  }
+  
+  .plan-name {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #38bdf8;
+    margin-bottom: 8px;
+  }
+  
+  .plan-price {
+    font-size: 1.2rem;
+    color: #94a3b8;
+  }
+  
+  .plan-billing {
+    font-size: 0.95rem;
+    color: #64748b;
+    margin-top: 8px;
+  }
+  
+  .plan-actions {
+    flex-shrink: 0;
+  }
+  
+  /* Buttons */
+  .btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  
+  .btn-primary {
+    background: #38bdf8;
+    color: #0f172a;
+  }
+  
+  .btn-primary:hover {
+    background: #0ea5e9;
+  }
+  
+  .btn-primary:disabled {
+    background: #334155;
+    color: #64748b;
+    cursor: not-allowed;
+  }
+  
+  /* Table */
+  .table-wrapper {
+    background: #1e293b;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #334155;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  th {
+    text-align: left;
+    padding: 16px;
+    background: #0f172a;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    border-bottom: 2px solid #334155;
+  }
+  
+  td {
+    padding: 16px;
+    border-bottom: 1px solid #334155;
+    font-size: 0.95rem;
+  }
+  
+  tr:last-child td {
+    border-bottom: none;
+  }
+  
+  /* Status badges */
+  .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .badge.paid {
+    background: #22c55e;
+    color: white;
+  }
+  
+  .badge.failed {
+    background: #ef4444;
+    color: white;
+  }
+  
+  .badge.pending {
+    background: #eab308;
+    color: #0f172a;
+  }
+  
+  /* Invoice link */
+  .invoice-link {
+    color: #38bdf8;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  
+  .invoice-link:hover {
+    text-decoration: underline;
+  }
+  
+  /* Empty state */
+  .empty {
+    text-align: center;
+    padding: 64px 24px;
+    color: #64748b;
+  }
+  
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 16px;
+  }
+  
+  .empty p {
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+  }
+  
+  .empty small {
+    font-size: 0.9rem;
+    color: #475569;
+    display: block;
+    margin-bottom: 24px;
+  }
+  
+  /* No subscription state */
+  .no-subscription {
+    text-align: center;
+    padding: 48px 24px;
+  }
+  
+  .no-subscription-icon {
+    font-size: 4rem;
+    margin-bottom: 16px;
+  }
+  
+  .no-subscription h3 {
+    font-size: 1.5rem;
+    color: #38bdf8;
+    margin-bottom: 12px;
+  }
+  
+  .no-subscription p {
+    font-size: 1rem;
+    color: #94a3b8;
+    margin-bottom: 24px;
+  }
+  
+  /* Loading spinner */
+  .spinner {
+    border: 3px solid #334155;
+    border-top-color: #38bdf8;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+    margin-left: 8px;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  /* Error message */
+  .error {
+    background: #991b1b;
+    color: #fecaca;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+  }
+  
+  /* Loading state */
+  .loading {
+    text-align: center;
+    padding: 48px 24px;
+    color: #64748b;
+  }
+  
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    body { padding: 16px; }
+    h1 { font-size: 1.5rem; }
+    .card { padding: 20px; }
+    .plan-info { flex-direction: column; align-items: flex-start; }
+    th, td { padding: 12px; font-size: 0.85rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <h1>
+      <span>💳</span>
+      <span>Billing</span>
+    </h1>
+    <nav class="nav">
+      <a href="/api/v1/dashboard/" class="nav-link">Dashboard</a>
+      <a href="/api/v1/leads/" class="nav-link">Leads</a>
+      <a href="/settings" class="nav-link">Settings</a>
+      <a href="/api/v1/billing/" class="nav-link active">Billing</a>
+      <a href="/logout" class="nav-link">Sign Out</a>
+    </nav>
+  </div>
+  
+  <!-- Error display -->
+  <div id="error-container"></div>
+  
+  <!-- Current Plan Card -->
+  <div class="card" id="plan-card">
+    <h2>Current Plan</h2>
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Loading billing information...</p>
+    </div>
+  </div>
+  
+  <!-- Payment History Card -->
+  <div class="card">
+    <h2>Payment History</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Invoice</th>
+          </tr>
+        </thead>
+        <tbody id="history-table">
+          <tr>
+            <td colspan="4" class="loading">
+              <div class="spinner"></div>
+              <span>Loading payment history...</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  // State
+  let billingStatus = null;
+  let paymentHistory = [];
+  
+  // Elements
+  const planCard = document.getElementById('plan-card');
+  const historyTable = document.getElementById('history-table');
+  const errorContainer = document.getElementById('error-container');
+  
+  // Get business_id from localStorage or URL params
+  function getBusinessId() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('business_id') || localStorage.getItem('business_id') || '1';
+  }
+  
+  // Fetch billing status
+  async function fetchBillingStatus() {
+    try {
+      const businessId = getBusinessId();
+      const response = await fetch(`/api/v1/billing/status?business_id=${businessId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch billing status: ${response.statusText}`);
+      }
+      
+      billingStatus = await response.json();
+      renderPlanCard();
+    } catch (error) {
+      console.error('Error fetching billing status:', error);
+      showError('Failed to load billing information. Please try again.');
+      planCard.innerHTML = `
+        <h2>Current Plan</h2>
+        <div class="empty">
+          <div class="empty-icon">⚠️</div>
+          <p>Failed to load billing information</p>
+          <small>Please refresh the page to try again</small>
+        </div>
+      `;
+    }
+  }
+  
+  // Fetch payment history
+  async function fetchPaymentHistory() {
+    try {
+      const businessId = getBusinessId();
+      const response = await fetch(`/api/v1/billing/history?business_id=${businessId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch payment history: ${response.statusText}`);
+      }
+      
+      paymentHistory = await response.json();
+      renderPaymentHistory();
+    } catch (error) {
+      console.error('Error fetching payment history:', error);
+      historyTable.innerHTML = `
+        <tr>
+          <td colspan="4" class="empty">
+            <div class="empty-icon">⚠️</div>
+            <p>Failed to load payment history</p>
+          </td>
+        </tr>
+      `;
+    }
+  }
+  
+  // Show error
+  function showError(message) {
+    errorContainer.innerHTML = `<div class="error">${message}</div>`;
+    setTimeout(() => {
+      errorContainer.innerHTML = '';
+    }, 5000);
+  }
+  
+  // Render plan card
+  function renderPlanCard() {
+    if (!billingStatus) {
+      return;
+    }
+    
+    // No subscription state
+    if (!billingStatus.has_subscription) {
+      planCard.innerHTML = `
+        <h2>Current Plan</h2>
+        <div class="no-subscription">
+          <div class="no-subscription-icon">🚀</div>
+          <h3>No active subscription</h3>
+          <p>Start your MindRobo plan to unlock all features</p>
+          <a href="/pricing" class="btn btn-primary">View Plans</a>
+        </div>
+      `;
+      return;
+    }
+    
+    // Active subscription
+    const nextBillingDate = billingStatus.next_billing_date 
+      ? new Date(billingStatus.next_billing_date).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        })
+      : 'N/A';
+    
+    planCard.innerHTML = `
+      <h2>Current Plan</h2>
+      <div class="plan-info">
+        <div class="plan-details">
+          <div class="plan-name">${billingStatus.plan_name || 'MindRobo Pro'}</div>
+          <div class="plan-price">$${billingStatus.price || '49'}/month</div>
+          <div class="plan-billing">Next billing date: ${nextBillingDate}</div>
+        </div>
+        <div class="plan-actions">
+          <button class="btn btn-primary" onclick="openCustomerPortal()" id="portal-btn">
+            Manage Subscription
+          </button>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Render payment history
+  function renderPaymentHistory() {
+    if (paymentHistory.length === 0) {
+      historyTable.innerHTML = `
+        <tr>
+          <td colspan="4" class="empty">
+            <div class="empty-icon">📋</div>
+            <p>No payment history yet</p>
+            <small>Your payment history will appear here</small>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+    
+    historyTable.innerHTML = paymentHistory.map(payment => {
+      const date = new Date(payment.date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+      
+      const statusBadge = getStatusBadge(payment.status);
+      const invoiceLink = payment.invoice_url 
+        ? `<a href="${payment.invoice_url}" target="_blank" class="invoice-link">View Invoice</a>`
+        : '—';
+      
+      return `
+        <tr>
+          <td>${date}</td>
+          <td>$${payment.amount.toFixed(2)}</td>
+          <td>${statusBadge}</td>
+          <td>${invoiceLink}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+  
+  // Get status badge
+  function getStatusBadge(status) {
+    const statusMap = {
+      'paid': 'Paid',
+      'failed': 'Failed',
+      'pending': 'Pending'
+    };
+    const label = statusMap[status] || status;
+    return `<span class="badge ${status}">${label}</span>`;
+  }
+  
+  // Open Stripe Customer Portal
+  async function openCustomerPortal() {
+    const button = document.getElementById('portal-btn');
+    const originalText = button.textContent;
+    button.disabled = true;
+    button.innerHTML = `${originalText} <span class="spinner"></span>`;
+    
+    try {
+      const businessId = getBusinessId();
+      const response = await fetch('/api/v1/billing/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ business_id: businessId })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to create portal session: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      // Open portal in new tab
+      if (data.url) {
+        window.open(data.url, '_blank');
+      } else {
+        throw new Error('No portal URL returned');
+      }
+      
+      button.disabled = false;
+      button.textContent = originalText;
+    } catch (error) {
+      console.error('Error opening customer portal:', error);
+      showError('Failed to open billing portal. Please try again.');
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
+  
+  // Initial load
+  fetchBillingStatus();
+  fetchPaymentHistory();
+</script>
+</body>
+</html>

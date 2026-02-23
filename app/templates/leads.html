@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<parameter name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindRobo — Leads</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 24px;
+    min-height: 100vh;
+  }
+  
+  .container { max-width: 1400px; margin: 0 auto; }
+  
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  
+  h1 {
+    font-size: 2rem;
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  /* Navigation */
+  .nav {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  .nav-link {
+    padding: 8px 16px;
+    color: #94a3b8;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+  }
+  
+  .nav-link:hover {
+    color: #e2e8f0;
+    background: #1e293b;
+  }
+  
+  .nav-link.active {
+    color: #38bdf8;
+    background: #1e293b;
+  }
+  
+  /* Filters */
+  .filters {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  
+  .filter-select {
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 0.95rem;
+    cursor: pointer;
+    outline: none;
+  }
+  
+  .filter-select:focus {
+    border-color: #38bdf8;
+  }
+  
+  /* Table */
+  .table-wrapper {
+    background: #1e293b;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #334155;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  th {
+    text-align: left;
+    padding: 16px;
+    background: #0f172a;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    border-bottom: 2px solid #334155;
+  }
+  
+  td {
+    padding: 16px;
+    border-bottom: 1px solid #334155;
+    font-size: 0.95rem;
+  }
+  
+  tr:last-child td {
+    border-bottom: none;
+  }
+  
+  tbody tr {
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  
+  tbody tr:hover {
+    background: #334155;
+  }
+  
+  tbody tr.expanded {
+    background: #334155;
+  }
+  
+  /* Status badges */
+  .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .badge.new {
+    background: #3b82f6;
+    color: white;
+  }
+  
+  .badge.contacted {
+    background: #eab308;
+    color: #0f172a;
+  }
+  
+  .badge.converted {
+    background: #22c55e;
+    color: white;
+  }
+  
+  .badge.lost {
+    background: #64748b;
+    color: white;
+  }
+  
+  .badge.call {
+    background: #8b5cf6;
+    color: white;
+  }
+  
+  .badge.web {
+    background: #06b6d4;
+    color: white;
+  }
+  
+  /* Call link */
+  .phone-link {
+    color: #38bdf8;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  
+  .phone-link:hover {
+    text-decoration: underline;
+  }
+  
+  /* Expanded details */
+  .lead-details {
+    background: #0f172a;
+    border-top: 1px solid #475569;
+  }
+  
+  .lead-details td {
+    padding: 24px;
+  }
+  
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .detail-section h3 {
+    font-size: 0.9rem;
+    color: #38bdf8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+  }
+  
+  .detail-section p {
+    color: #cbd5e1;
+    line-height: 1.6;
+  }
+  
+  .detail-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .btn-primary {
+    background: #38bdf8;
+    color: #0f172a;
+  }
+  
+  .btn-primary:hover {
+    background: #0ea5e9;
+  }
+  
+  .btn-primary:disabled {
+    background: #334155;
+    color: #64748b;
+    cursor: not-allowed;
+  }
+  
+  .btn-secondary {
+    background: #22c55e;
+    color: white;
+  }
+  
+  .btn-secondary:hover {
+    background: #16a34a;
+  }
+  
+  .btn-secondary:disabled {
+    background: #334155;
+    color: #64748b;
+    cursor: not-allowed;
+  }
+  
+  /* Empty state */
+  .empty {
+    text-align: center;
+    padding: 64px 24px;
+    color: #64748b;
+  }
+  
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 16px;
+  }
+  
+  .empty p {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+  }
+  
+  .empty small {
+    font-size: 0.9rem;
+    color: #475569;
+  }
+  
+  /* Loading spinner */
+  .spinner {
+    border: 3px solid #334155;
+    border-top-color: #38bdf8;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+    margin-left: 8px;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  /* Error message */
+  .error {
+    background: #991b1b;
+    color: #fecaca;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+  }
+  
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    body { padding: 16px; }
+    h1 { font-size: 1.5rem; }
+    th, td { padding: 12px; font-size: 0.85rem; }
+    .detail-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <h1>
+      <span>📊</span>
+      <span>Leads</span>
+    </h1>
+    <nav class="nav">
+      <a href="/api/v1/dashboard/" class="nav-link">Dashboard</a>
+      <a href="/api/v1/leads/" class="nav-link active">Leads</a>
+      <a href="/settings" class="nav-link">Settings</a>
+      <a href="/api/v1/billing/" class="nav-link">Billing</a>
+      <a href="/logout" class="nav-link">Sign Out</a>
+    </nav>
+  </div>
+  
+  <!-- Error display -->
+  <div id="error-container"></div>
+  
+  <!-- Filters -->
+  <div class="filters">
+    <select id="status-filter" class="filter-select">
+      <option value="all">All Leads</option>
+      <option value="new">New</option>
+      <option value="contacted">Contacted</option>
+      <option value="converted">Converted</option>
+      <option value="lost">Lost</option>
+    </select>
+    
+    <select id="source-filter" class="filter-select">
+      <option value="all">All Sources</option>
+      <option value="call">Calls</option>
+      <option value="web">Web</option>
+    </select>
+  </div>
+  
+  <!-- Table -->
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Caller Name</th>
+          <th>Phone</th>
+          <th>Service Needed</th>
+          <th>Source</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="leads-table">
+        <tr>
+          <td colspan="6" class="empty">
+            <div class="empty-icon">📋</div>
+            <p>No leads yet</p>
+            <small>They'll appear here as your AI takes calls</small>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // State
+  let allLeads = [];
+  let expandedLeadId = null;
+  
+  // Elements
+  const tbody = document.getElementById('leads-table');
+  const statusFilter = document.getElementById('status-filter');
+  const sourceFilter = document.getElementById('source-filter');
+  const errorContainer = document.getElementById('error-container');
+  
+  // Get business_id from localStorage or URL params
+  function getBusinessId() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('business_id') || localStorage.getItem('business_id') || '1';
+  }
+  
+  // Fetch leads
+  async function fetchLeads() {
+    try {
+      const businessId = getBusinessId();
+      const response = await fetch(`/api/v1/leads/?business_id=${businessId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch leads: ${response.statusText}`);
+      }
+      
+      allLeads = await response.json();
+      renderLeads();
+    } catch (error) {
+      console.error('Error fetching leads:', error);
+      showError('Failed to load leads. Please try again.');
+    }
+  }
+  
+  // Show error
+  function showError(message) {
+    errorContainer.innerHTML = `<div class="error">${message}</div>`;
+    setTimeout(() => {
+      errorContainer.innerHTML = '';
+    }, 5000);
+  }
+  
+  // Format date
+  function formatDate(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    const now = new Date();
+    const diffMs = now - d;
+    const diffHours = diffMs / (1000 * 60 * 60);
+    
+    if (diffHours < 1) {
+      const mins = Math.floor(diffMs / (1000 * 60));
+      return `${mins}m ago`;
+    } else if (diffHours < 24) {
+      const hours = Math.floor(diffHours);
+      return `${hours}h ago`;
+    } else {
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+  }
+  
+  // Get status badge
+  function getStatusBadge(status) {
+    const statusMap = {
+      'new': 'New',
+      'contacted': 'Contacted',
+      'converted': 'Converted',
+      'lost': 'Lost'
+    };
+    const label = statusMap[status] || status;
+    return `<span class="badge ${status}">${label}</span>`;
+  }
+  
+  // Get source badge
+  function getSourceBadge(source) {
+    const sourceMap = {
+      'call': 'Call',
+      'web': 'Web'
+    };
+    const label = sourceMap[source] || source;
+    return `<span class="badge ${source}">${label}</span>`;
+  }
+  
+  // Filter leads
+  function filterLeads() {
+    const statusFilterValue = statusFilter.value;
+    const sourceFilterValue = sourceFilter.value;
+    
+    return allLeads.filter(lead => {
+      const matchesStatus = statusFilterValue === 'all' || lead.status === statusFilterValue;
+      const matchesSource = sourceFilterValue === 'all' || lead.source === sourceFilterValue;
+      return matchesStatus && matchesSource;
+    });
+  }
+  
+  // Render leads
+  function renderLeads() {
+    const filteredLeads = filterLeads();
+    
+    if (filteredLeads.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="empty">
+            <div class="empty-icon">📋</div>
+            <p>No leads match your filters</p>
+            <small>Try adjusting your filters</small>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+    
+    tbody.innerHTML = filteredLeads.map(lead => {
+      const isExpanded = expandedLeadId === lead.id;
+      const rowClass = isExpanded ? 'class="expanded"' : '';
+      
+      let html = `
+        <tr ${rowClass} data-lead-id="${lead.id}">
+          <td>${formatDate(lead.created_at)}</td>
+          <td>${lead.caller_name || '—'}</td>
+          <td><a href="tel:${lead.caller_phone}" class="phone-link">${lead.caller_phone}</a></td>
+          <td>${lead.service_needed || '—'}</td>
+          <td>${getSourceBadge(lead.source)}</td>
+          <td>${getStatusBadge(lead.status)}</td>
+        </tr>
+      `;
+      
+      if (isExpanded) {
+        html += `
+          <tr class="lead-details">
+            <td colspan="6">
+              <div class="detail-grid">
+                <div class="detail-section">
+                  <h3>Notes</h3>
+                  <p>${lead.notes || 'No notes available'}</p>
+                </div>
+                <div class="detail-section">
+                  <h3>Contact Info</h3>
+                  <p><strong>Name:</strong> ${lead.caller_name || 'N/A'}</p>
+                  <p><strong>Phone:</strong> <a href="tel:${lead.caller_phone}" class="phone-link">${lead.caller_phone}</a></p>
+                  <p><strong>Source:</strong> ${lead.source}</p>
+                </div>
+              </div>
+              <div class="detail-actions">
+                <button 
+                  class="btn btn-primary" 
+                  onclick="updateLeadStatus(${lead.id}, 'contacted')"
+                  ${lead.status === 'contacted' || lead.status === 'converted' ? 'disabled' : ''}
+                >
+                  Mark as Contacted
+                </button>
+                <button 
+                  class="btn btn-secondary" 
+                  onclick="updateLeadStatus(${lead.id}, 'converted')"
+                  ${lead.status === 'converted' ? 'disabled' : ''}
+                >
+                  Mark as Converted
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }
+      
+      return html;
+    }).join('');
+    
+    // Add click handlers
+    tbody.querySelectorAll('tr[data-lead-id]').forEach(row => {
+      row.addEventListener('click', () => {
+        const leadId = parseInt(row.dataset.leadId);
+        expandedLeadId = expandedLeadId === leadId ? null : leadId;
+        renderLeads();
+      });
+    });
+  }
+  
+  // Update lead status
+  async function updateLeadStatus(leadId, newStatus) {
+    const button = event.target;
+    const originalText = button.textContent;
+    button.disabled = true;
+    button.innerHTML = `${originalText} <span class="spinner"></span>`;
+    
+    try {
+      const response = await fetch(`/api/v1/leads/${leadId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to update status: ${response.statusText}`);
+      }
+      
+      // Update local state
+      const lead = allLeads.find(l => l.id === leadId);
+      if (lead) {
+        lead.status = newStatus;
+      }
+      
+      renderLeads();
+    } catch (error) {
+      console.error('Error updating lead status:', error);
+      showError('Failed to update lead status. Please try again.');
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
+  
+  // Event listeners
+  statusFilter.addEventListener('change', renderLeads);
+  sourceFilter.addEventListener('change', renderLeads);
+  
+  // Initial load
+  fetchLeads();
+  
+  // Refresh every 30 seconds
+  setInterval(fetchLeads, 30000);
+</script>
+</body>
+</html>
