@@ -27,19 +27,3 @@ class Call(Base):
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-
-class Lead(Base):
-    __tablename__ = "leads"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    business_id = Column(String, index=True, nullable=False)
-    caller_name = Column(String, nullable=True)
-    caller_phone = Column(String, nullable=False)
-    service_needed = Column(String, nullable=True)
-    notes = Column(Text, nullable=True)
-    source = Column(Enum("call", "web", name="lead_source"), default="call")
-    status = Column(Enum("new", "contacted", "converted", "lost", name="lead_status"), default="new")
-    
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

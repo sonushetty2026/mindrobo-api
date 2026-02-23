@@ -110,3 +110,28 @@ async def analytics_redirect():
 @app.get("/warroom")
 async def warroom_redirect():
     return RedirectResponse(url="/api/v1/warroom/")
+
+
+@app.get("/leads", response_class=HTMLResponse)
+async def leads_page():
+    return load_template("leads.html")
+
+
+@app.get("/billing", response_class=HTMLResponse)
+async def billing_page():
+    return load_template("billing.html")
+
+
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page():
+    return load_template("settings.html")
+
+
+@app.get("/appointments", response_class=HTMLResponse)
+async def appointments_page():
+    return load_template("appointments.html")
+
+
+@app.get("/phone-setup", response_class=HTMLResponse)
+async def phone_setup_page():
+    return load_template("phone-setup.html")
