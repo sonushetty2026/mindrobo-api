@@ -11,10 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.call import Call
 from app.models.business import Business
+from app.models.user import User
 from app.models.lead import Lead, LeadSource
 from app.services.sms import send_caller_confirmation, send_owner_summary
 from app.services.blob_storage import blob_service
 from app.services.email_service import email_service
+from app.core.trial_limits import check_trial_limit_calls
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +52,22 @@ async def lookup_business(db: AsyncSession, agent_id: str) -> Business | None:
 
 async def save_call(db: AsyncSession, call_data: dict, lead: dict) -> Call:
     """Create and persist a Call record. Returns the saved Call."""
+    agent_id = call_data.get("agent_id", "")
+    
+    # Check trial limits before creating call
+    if agent_id:
+        business = await lookup_business(db, agent_id)
+        if business:
+            # Get the business owner (user) to check trial status
+            user_result = await db.execute(
+                select(User).where(User.business_id == business.id)
+            )
+            user = user_result.scalars().first()
+            
+            if user:
+                # Check trial limit (will raise HTTPException if exceeded)
+                await check_trial_limit_calls(db, agent_id, user)
+    
     outcome = (
         "lead_captured"
         if lead.get("lead_name") or lead.get("service_type")

@@ -2,6 +2,7 @@
 
 from typing import Optional
 from uuid import UUID
+from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy import select
@@ -92,3 +93,42 @@ async def get_current_user_optional(
         pass
     
     return None
+
+
+async def check_trial_status(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """Check if user's trial has expired and account should be paused.
+    
+    If trial has expired and user hasn't upgraded (no plan_id), set is_paused=True.
+    Returns 403 if account is paused.
+    
+    Grace period: 3 days after trial_ends_at before full pause.
+    """
+    if not current_user.is_trial:
+        # User is not on trial (has paid plan), allow access
+        return current_user
+    
+    if not current_user.trial_ends_at:
+        # No trial end date set, allow access (shouldn't happen, but be safe)
+        return current_user
+    
+    now = datetime.utcnow()
+    grace_period_end = current_user.trial_ends_at + timedelta(days=3)
+    
+    # Check if grace period has passed
+    if now > grace_period_end:
+        # Trial + grace period expired, pause account if not paid
+        if not current_user.plan_id:
+            if not current_user.is_paused:
+                current_user.is_paused = True
+                current_user.paused_at = now
+                await db.commit()
+            
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Trial expired. Please upgrade to a paid plan to continue using MindRobo."
+            )
+    
+    return current_user

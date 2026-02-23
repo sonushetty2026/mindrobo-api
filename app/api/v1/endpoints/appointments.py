@@ -8,7 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from app.core.database import get_db
 from app.models.business import Business
+from app.models.user import User
 from app.models.appointment import Appointment, AppointmentStatus
+from app.core.trial_limits import check_trial_limit_appointments
 from app.schemas.appointment import (
     AvailabilityConfigUpdate,
     AvailabilityConfigOut,
@@ -247,7 +249,7 @@ async def book_appointment(
     appointment: AppointmentCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    """Book a new appointment."""
+    """Book a new appointment (with trial limit check)."""
     
     # Fetch business
     result = await db.execute(select(Business).where(Business.id == appointment.business_id))
@@ -255,6 +257,16 @@ async def book_appointment(
     
     if not business:
         raise HTTPException(status_code=404, detail="Business not found")
+    
+    # Get the business owner (user) to check trial status
+    user_result = await db.execute(
+        select(User).where(User.business_id == appointment.business_id)
+    )
+    user = user_result.scalars().first()
+    
+    if user:
+        # Check trial limits before creating appointment
+        await check_trial_limit_appointments(db, appointment.business_id, user)
     
     # Validate that the slot is available
     available_slots = await calculate_available_slots(business, appointment.appointment_date, db)

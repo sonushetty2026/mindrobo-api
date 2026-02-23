@@ -27,6 +27,9 @@ from app.schemas.admin import (
     AdminTrialConvert,
     MessageResponse,
 )
+from app.schemas.notification import BroadcastRequest
+from app.services.notification_service import create_notification
+from app.models.notification import NotificationType
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -573,4 +576,54 @@ async def convert_trial_to_paid(
     
     return MessageResponse(
         message=f"User {user.email} converted to paid. Assigned plan: {plan.name}"
+    )
+
+
+# ============================================================================
+# ISSUE #90: ADMIN BROADCAST NOTIFICATIONS
+# ============================================================================
+
+@router.post("/broadcast", response_model=MessageResponse)
+async def broadcast_notification(
+    broadcast_data: BroadcastRequest,
+    current_user: User = Depends(require_superadmin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Broadcast a notification to all users (or filtered by role).
+    
+    Sends a notification to all users, optionally filtered by role.
+    """
+    # Build query to get all users (or filtered by role)
+    query = select(User).where(User.is_active == True)
+    
+    if broadcast_data.target_role:
+        query = query.where(User.role == broadcast_data.target_role)
+    
+    result = await db.execute(query)
+    users = result.scalars().all()
+    
+    if not users:
+        return MessageResponse(message="No users found matching the criteria")
+    
+    # Create notification for each user
+    count = 0
+    for user in users:
+        await create_notification(
+            db=db,
+            user_id=user.id,
+            title=broadcast_data.title,
+            message=broadcast_data.message,
+            notification_type=broadcast_data.type,
+        )
+        count += 1
+    
+    logger.info(
+        "Admin %s broadcast notification to %d users (role filter: %s)",
+        current_user.email,
+        count,
+        broadcast_data.target_role or "all",
+    )
+    
+    return MessageResponse(
+        message=f"Notification broadcast to {count} users"
     )
