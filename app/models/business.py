@@ -63,6 +63,9 @@ class Business(Base):
         nullable=True
     )
     
+    # Call forwarding settings (Issue #62)
+    ring_timeout_seconds = Column(String, default="20", nullable=True)  # How long to ring before forwarding
+    
     # Availability/Scheduling fields
     working_days = Column(JSON, nullable=True)  # ["mon", "tue", "wed", "thu", "fri"]
     working_hours_start = Column(String, nullable=True)  # "08:00"

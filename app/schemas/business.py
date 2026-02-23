@@ -64,6 +64,21 @@ class PhoneForwardRequest(BaseModel):
     phone_number: str
 
 
+class CallSettingsConfig(BaseModel):
+    """Call forwarding settings (Issue #62)."""
+    ring_timeout_seconds: int
+    owner_phone: str
+
+
+class CallSettingsOut(BaseModel):
+    """Response schema for call settings."""
+    ring_timeout_seconds: int | None = None
+    owner_phone: str | None = None
+
+    class Config:
+        from_attributes = True
+
+
 class BusinessOut(BaseModel):
     id: UUID
     name: str
@@ -75,6 +90,7 @@ class BusinessOut(BaseModel):
     stripe_customer_id: str | None = None
     subscription_status: str | None = None
     is_active: bool
+    ring_timeout_seconds: int | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
     
