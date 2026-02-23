@@ -1,6 +1,6 @@
 """User model for multi-tenant authentication."""
 
-from sqlalchemy import Column, String, DateTime, ForeignKey
+from sqlalchemy import Column, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
@@ -16,7 +16,12 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id"), nullable=False, index=True)
     full_name = Column(String, nullable=True)
-    is_active = Column(String, default=True)
+    is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)
+    verification_token = Column(String, nullable=True, index=True)
+    verification_expires = Column(DateTime, nullable=True)
+    reset_token = Column(String, nullable=True, index=True)
+    reset_expires = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     

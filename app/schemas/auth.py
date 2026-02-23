@@ -41,6 +41,33 @@ class UserOut(BaseModel):
     full_name: str | None = None
     business_id: UUID
     is_active: bool
+    is_verified: bool
 
     class Config:
         from_attributes = True
+
+
+class VerifyEmail(BaseModel):
+    """Request schema for email verification."""
+    token: str
+
+
+class ForgotPassword(BaseModel):
+    """Request schema for forgot password."""
+    email: EmailStr
+
+
+class ResetPassword(BaseModel):
+    """Request schema for password reset."""
+    token: str
+    new_password: str
+
+
+class ResendVerification(BaseModel):
+    """Request schema for resending verification email."""
+    email: EmailStr
+
+
+class MessageResponse(BaseModel):
+    """Generic success message response."""
+    message: str
