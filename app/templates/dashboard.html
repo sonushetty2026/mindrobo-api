@@ -146,6 +146,160 @@
     transition: all 0.2s;
   }
   
+  .stat-card.trial-green { border-left: 4px solid #22c55e; }
+  .stat-card.trial-yellow { border-left: 4px solid #f59e0b; }
+  .stat-card.trial-red { border-left: 4px solid #ef4444; }
+  .stat-card.trial-expired { border-left: 4px solid #dc2626; background: #3f1f1f; }
+  
+  .upgrade-cta {
+    margin-top: 12px;
+    padding: 8px 16px;
+    background: #3b82f6;
+    color: white;
+    border-radius: 6px;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  
+  .upgrade-cta:hover {
+    background: #2563eb;
+  }
+  
+  .usage-bar {
+    margin-top: 12px;
+  }
+  
+  .usage-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-bottom: 6px;
+  }
+  
+  .usage-bar-track {
+    height: 8px;
+    background: #334155;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  
+  .usage-bar-fill {
+    height: 100%;
+    background: #22c55e;
+    transition: width 0.3s, background 0.3s;
+  }
+  
+  .usage-bar-fill.warning {
+    background: #f59e0b;
+  }
+  
+  .usage-bar-fill.danger {
+    background: #ef4444;
+  }
+  
+  .notification-bell {
+    position: relative;
+    font-size: 1.3rem;
+    cursor: pointer;
+    padding: 8px;
+    transition: color 0.2s;
+  }
+  
+  .notification-bell:hover {
+    color: #38bdf8;
+  }
+  
+  .notification-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: #ef4444;
+    color: white;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    min-width: 18px;
+    text-align: center;
+  }
+  
+  .notification-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 350px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-top: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    display: none;
+    z-index: 1000;
+  }
+  
+  .notification-dropdown.show {
+    display: block;
+  }
+  
+  .notification-header {
+    padding: 16px;
+    border-bottom: 1px solid #334155;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .notification-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #334155;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .notification-item:hover {
+    background: #334155;
+  }
+  
+  .notification-item.unread {
+    background: #1e3a52;
+  }
+  
+  .notification-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+  }
+  
+  .notification-body {
+    font-size: 0.85rem;
+    color: #94a3b8;
+  }
+  
+  .notification-time {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 4px;
+  }
+  
+  .notification-footer {
+    padding: 12px 16px;
+    text-align: center;
+  }
+  
+  .notification-footer a {
+    color: #38bdf8;
+    text-decoration: none;
+    font-size: 0.85rem;
+  }
+  
+  .notification-footer a:hover {
+    text-decoration: underline;
+  }
+  
   .stat-card.clickable {
     cursor: pointer;
     text-decoration: none;
@@ -351,6 +505,20 @@
       <a href="/api/v1/leads/" class="nav-link">Leads</a>
       <a href="/settings" class="nav-link">Settings</a>
       <a href="/api/v1/billing/" class="nav-link">Billing</a>
+      <div class="notification-bell" id="notification-bell">
+        🔔
+        <span class="notification-badge" id="notification-count" style="display: none;">0</span>
+        <div class="notification-dropdown" id="notification-dropdown">
+          <div class="notification-header">
+            <span>Notifications</span>
+            <a href="#" id="mark-all-read" style="color: #38bdf8; font-size: 0.8rem; text-decoration: none;">Mark all read</a>
+          </div>
+          <div id="notification-list"></div>
+          <div class="notification-footer">
+            <a href="/notifications">View all notifications</a>
+          </div>
+        </div>
+      </div>
       <a href="/logout" class="nav-link">Sign Out</a>
     </nav>
     <div class="status-indicator">
@@ -361,6 +529,32 @@
   
   <!-- Stats -->
   <div class="stats">
+    <div class="stat-card" id="trial-card">
+      <div class="stat-label">Trial Status</div>
+      <div class="stat-value" id="trial-days">—</div>
+      <div id="trial-cta"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Usage Limits</div>
+      <div class="usage-bar">
+        <div class="usage-bar-label">
+          <span>Calls</span>
+          <span id="usage-calls-text">0/0</span>
+        </div>
+        <div class="usage-bar-track">
+          <div class="usage-bar-fill" id="usage-calls-bar"></div>
+        </div>
+      </div>
+      <div class="usage-bar">
+        <div class="usage-bar-label">
+          <span>Leads</span>
+          <span id="usage-leads-text">0/0</span>
+        </div>
+        <div class="usage-bar-track">
+          <div class="usage-bar-fill" id="usage-leads-bar"></div>
+        </div>
+      </div>
+    </div>
     <div class="stat-card">
       <div class="stat-label">Total Calls</div>
       <div class="stat-value" id="stat-total">0</div>
@@ -698,6 +892,167 @@
       });
   }
   
+  // Fetch trial status
+  function fetchTrialStatus() {
+    fetch('/api/v1/users/me/trial-status')
+      .then(r => r.json())
+      .then(data => {
+        const card = document.getElementById('trial-card');
+        const daysEl = document.getElementById('trial-days');
+        const ctaEl = document.getElementById('trial-cta');
+        
+        if (data.is_expired) {
+          daysEl.textContent = 'Expired';
+          card.className = 'stat-card trial-expired';
+          ctaEl.innerHTML = '<a href="/api/v1/billing/" class="upgrade-cta">Upgrade Now</a>';
+        } else {
+          const days = data.days_remaining;
+          daysEl.textContent = `${days} days`;
+          
+          if (days > 7) {
+            card.className = 'stat-card trial-green';
+          } else if (days >= 3) {
+            card.className = 'stat-card trial-yellow';
+          } else {
+            card.className = 'stat-card trial-red';
+          }
+          
+          ctaEl.innerHTML = '';
+        }
+      })
+      .catch(err => console.error('Failed to fetch trial status:', err));
+  }
+  
+  // Fetch usage limits
+  function fetchUsageLimits() {
+    fetch('/api/v1/users/me/usage-limits')
+      .then(r => r.json())
+      .then(data => {
+        // Calls usage
+        const callsUsed = data.calls_used || 0;
+        const callsLimit = data.calls_limit || 0;
+        const callsPct = callsLimit > 0 ? (callsUsed / callsLimit) * 100 : 0;
+        
+        document.getElementById('usage-calls-text').textContent = `${callsUsed}/${callsLimit}`;
+        const callsBar = document.getElementById('usage-calls-bar');
+        callsBar.style.width = `${Math.min(callsPct, 100)}%`;
+        
+        if (callsPct > 80) {
+          callsBar.className = 'usage-bar-fill danger';
+        } else if (callsPct > 60) {
+          callsBar.className = 'usage-bar-fill warning';
+        } else {
+          callsBar.className = 'usage-bar-fill';
+        }
+        
+        // Leads usage
+        const leadsUsed = data.leads_used || 0;
+        const leadsLimit = data.leads_limit || 0;
+        const leadsPct = leadsLimit > 0 ? (leadsUsed / leadsLimit) * 100 : 0;
+        
+        document.getElementById('usage-leads-text').textContent = `${leadsUsed}/${leadsLimit}`;
+        const leadsBar = document.getElementById('usage-leads-bar');
+        leadsBar.style.width = `${Math.min(leadsPct, 100)}%`;
+        
+        if (leadsPct > 80) {
+          leadsBar.className = 'usage-bar-fill danger';
+        } else if (leadsPct > 60) {
+          leadsBar.className = 'usage-bar-fill warning';
+        } else {
+          leadsBar.className = 'usage-bar-fill';
+        }
+      })
+      .catch(err => console.error('Failed to fetch usage limits:', err));
+  }
+  
+  // Fetch notification count
+  function fetchNotificationCount() {
+    fetch('/api/v1/notifications/unread-count')
+      .then(r => r.json())
+      .then(data => {
+        const count = data.count || 0;
+        const badge = document.getElementById('notification-count');
+        
+        if (count > 0) {
+          badge.textContent = count > 99 ? '99+' : count;
+          badge.style.display = 'block';
+        } else {
+          badge.style.display = 'none';
+        }
+      })
+      .catch(err => console.error('Failed to fetch notification count:', err));
+  }
+  
+  // Fetch recent notifications (last 5)
+  function fetchRecentNotifications() {
+    fetch('/api/v1/notifications/recent?limit=5')
+      .then(r => r.json())
+      .then(notifications => {
+        const list = document.getElementById('notification-list');
+        
+        if (notifications.length === 0) {
+          list.innerHTML = '<div style="padding: 20px; text-align: center; color: #64748b;">No notifications</div>';
+          return;
+        }
+        
+        list.innerHTML = notifications.map(n => {
+          const time = formatTime(n.created_at);
+          const unread = n.is_read ? '' : 'unread';
+          return `
+            <div class="notification-item ${unread}" onclick="markAsRead(${n.id})">
+              <div class="notification-title">${n.title || 'Notification'}</div>
+              <div class="notification-body">${n.message || ''}</div>
+              <div class="notification-time">${time}</div>
+            </div>
+          `;
+        }).join('');
+      })
+      .catch(err => console.error('Failed to fetch notifications:', err));
+  }
+  
+  // Mark notification as read
+  function markAsRead(notificationId) {
+    fetch(`/api/v1/notifications/${notificationId}/read`, { method: 'POST' })
+      .then(() => {
+        fetchNotificationCount();
+        fetchRecentNotifications();
+      })
+      .catch(err => console.error('Failed to mark as read:', err));
+  }
+  window.markAsRead = markAsRead;
+  
+  // Mark all as read
+  document.getElementById('mark-all-read').addEventListener('click', (e) => {
+    e.preventDefault();
+    fetch('/api/v1/notifications/mark-all-read', { method: 'POST' })
+      .then(() => {
+        fetchNotificationCount();
+        fetchRecentNotifications();
+      })
+      .catch(err => console.error('Failed to mark all as read:', err));
+  });
+  
+  // Toggle notification dropdown
+  const notificationBell = document.getElementById('notification-bell');
+  const notificationDropdown = document.getElementById('notification-dropdown');
+  
+  notificationBell.addEventListener('click', (e) => {
+    e.stopPropagation();
+    notificationDropdown.classList.toggle('show');
+    if (notificationDropdown.classList.contains('show')) {
+      fetchRecentNotifications();
+    }
+  });
+  
+  // Close dropdown when clicking outside
+  document.addEventListener('click', () => {
+    notificationDropdown.classList.remove('show');
+  });
+  
+  notificationDropdown.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+  
   // Initial load
   fetch('/api/v1/dashboard/recent?limit=50')
     .then(r => r.json())
@@ -710,6 +1065,21 @@
   fetchLeadStats();
   // Refresh lead stats every 30 seconds
   setInterval(fetchLeadStats, 30000);
+  
+  // Fetch trial status
+  fetchTrialStatus();
+  // Refresh every 5 minutes
+  setInterval(fetchTrialStatus, 300000);
+  
+  // Fetch usage limits
+  fetchUsageLimits();
+  // Refresh every minute
+  setInterval(fetchUsageLimits, 60000);
+  
+  // Fetch notification count
+  fetchNotificationCount();
+  // Poll every 30 seconds
+  setInterval(fetchNotificationCount, 30000);
   
   // WebSocket for live updates
   function connectWS() {
