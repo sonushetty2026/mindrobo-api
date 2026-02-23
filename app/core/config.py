@@ -1,10 +1,10 @@
 from pydantic_settings import BaseSettings
-import secrets
+import os
 
 class Settings(BaseSettings):
     APP_ENV: str = "development"
     SECRET_KEY: str = "changeme"
-    JWT_SECRET_KEY: str = secrets.token_urlsafe(32) if not "JWT_SECRET_KEY" in globals() else "changeme-jwt-secret"
+    JWT_SECRET_KEY: str = os.environ.get("JWT_SECRET_KEY", "")
     DATABASE_URL: str
     RETELL_API_KEY: str = ""
     RETELL_WEBHOOK_SECRET: str = ""
@@ -31,3 +31,10 @@ class Settings(BaseSettings):
         env_file = ".env"
 
 settings = Settings()
+
+# Validate critical security settings
+if not settings.JWT_SECRET_KEY:
+    raise ValueError(
+        "JWT_SECRET_KEY environment variable is required. "
+        "Generate a secure key with: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+    )

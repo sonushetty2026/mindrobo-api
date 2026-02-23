@@ -57,3 +57,46 @@ async def db():
     """Direct DB session for test setup/assertions."""
     async with TestSession() as session:
         yield session
+
+
+@pytest_asyncio.fixture
+async def verified_user(client, db):
+    """Create a verified user and return their auth token."""
+    from app.models.user import User
+    from app.models.business import Business
+    from app.services.auth import hash_password
+    
+    # Create business
+    business = Business(
+        name="Test Business",
+        owner_email="verified@example.com",
+        owner_phone="+10000000000",
+        is_active=True,
+    )
+    db.add(business)
+    await db.flush()
+    
+    # Create pre-verified user
+    user = User(
+        email="verified@example.com",
+        hashed_password=hash_password("testpass123"),
+        full_name="Verified User",
+        business_id=business.id,
+        is_active=True,
+        is_verified=True,
+    )
+    db.add(user)
+    await db.commit()
+    
+    # Login to get token
+    resp = await client.post("/api/v1/auth/login", json={
+        "email": "verified@example.com",
+        "password": "testpass123"
+    })
+    
+    return {
+        "token": resp.json()["access_token"],
+        "user_id": str(user.id),
+        "business_id": str(business.id),
+        "email": "verified@example.com",
+    }

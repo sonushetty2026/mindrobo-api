@@ -146,7 +146,8 @@ async def verify_email(data: VerifyEmail, db: AsyncSession = Depends(get_db)):
         await email_service.send_welcome_email(user.email, user.full_name or user.email)
     except Exception as e:
         logger.error("Failed to send welcome email to %s: %s", user.email, e)
-    
+
+>>>>>>> origin/main
     return {"message": "Email verified successfully. You can now log in."}
 
 
