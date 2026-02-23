@@ -1,9 +1,11 @@
 """Business onboarding and agent configuration endpoints."""
 
 import logging
+from pathlib import Path
 from uuid import UUID
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -21,6 +23,24 @@ from app.schemas.onboarding import (
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# Load onboarding template
+TEMPLATES_DIR = Path(__file__).parent.parent.parent.parent / "app" / "templates"
+ONBOARDING_TEMPLATE_PATH = TEMPLATES_DIR / "onboarding.html"
+
+
+def _load_onboarding_template() -> str:
+    """Load the onboarding HTML template from file."""
+    if not ONBOARDING_TEMPLATE_PATH.exists():
+        logger.error("Onboarding template not found at %s", ONBOARDING_TEMPLATE_PATH)
+        return "<html><body><h1>Onboarding template not found</h1></body></html>"
+    return ONBOARDING_TEMPLATE_PATH.read_text()
+
+
+@router.get("/", response_class=HTMLResponse)
+async def onboarding_page():
+    """Serve the onboarding wizard HTML page."""
+    return _load_onboarding_template()
 
 
 @router.post("/onboard", status_code=201)
