@@ -4,11 +4,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from app.api.v1.router import api_router
 from app.core.config import settings
+from app.core.seed import seed_test_account
+from contextlib import asynccontextmanager
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup and shutdown events."""
+    # Startup: seed test account
+    await seed_test_account()
+    yield
+    # Shutdown: cleanup if needed
+
 
 app = FastAPI(
     title="MindRobo API",
     description="AI Receptionist for Home Services — Retell.ai + FastAPI + Azure",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
