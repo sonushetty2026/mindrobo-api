@@ -24,6 +24,7 @@ from app.schemas.admin import (
     AdminTrialList,
     AdminTrialStats,
     AdminTrialExtend,
+    AdminTrialConvert,
     MessageResponse,
 )
 
@@ -121,6 +122,27 @@ async def get_admin_analytics(
     
     total_revenue = mrr  # Simplified: could integrate with billing logs
     
+    # Growth chart (last 30 days)
+    growth_chart = []
+    for i in range(29, -1, -1):  # Last 30 days
+        day_start = today_start - timedelta(days=i)
+        day_end = day_start + timedelta(days=1)
+        
+        day_signups_result = await db.execute(
+            select(func.count(User.id)).where(
+                and_(
+                    User.created_at >= day_start,
+                    User.created_at < day_end
+                )
+            )
+        )
+        day_signups = day_signups_result.scalar() or 0
+        
+        growth_chart.append({
+            "date": day_start.strftime("%Y-%m-%d"),
+            "count": day_signups
+        })
+    
     return AdminAnalytics(
         total_users=total_users,
         signups_today=signups_today,
@@ -132,6 +154,7 @@ async def get_admin_analytics(
         trial_users=trial_users,
         paid_users=paid_users,
         expired_users=expired_users,
+        growth_chart=growth_chart,
     )
 
 
@@ -210,6 +233,7 @@ async def get_user_details(
 
 
 @router.put("/users/{user_id}", response_model=AdminUserOut)
+@router.patch("/users/{user_id}", response_model=AdminUserOut)
 async def update_user(
     user_id: UUID,
     update_data: AdminUserUpdate,
@@ -219,6 +243,7 @@ async def update_user(
     """Update user fields (role, is_paused, plan_id).
     
     Admin can modify user roles, pause status, and subscription plan.
+    Supports both PUT and PATCH methods.
     """
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -510,3 +535,42 @@ async def shorten_trial(
     # Flip the sign to shorten
     shorten_data.days = -abs(shorten_data.days)
     return await extend_trial(user_id, shorten_data, current_user, db)
+
+
+@router.post("/trials/{user_id}/convert", response_model=MessageResponse)
+async def convert_trial_to_paid(
+    user_id: UUID,
+    convert_data: AdminTrialConvert,
+    current_user: User = Depends(require_superadmin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Convert a trial user to paid.
+    
+    Sets is_trial=False, clears trial_ends_at, assigns plan_id.
+    """
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if not user.is_trial:
+        raise HTTPException(status_code=400, detail="User is not on trial")
+    
+    # Verify plan exists
+    plan_result = await db.execute(select(SubscriptionPlan).where(SubscriptionPlan.id == convert_data.plan_id))
+    plan = plan_result.scalar_one_or_none()
+    if not plan:
+        raise HTTPException(status_code=404, detail="Subscription plan not found")
+    
+    # Convert to paid
+    user.is_trial = False
+    user.trial_ends_at = None
+    user.plan_id = convert_data.plan_id
+    await db.commit()
+    
+    logger.info("Admin %s converted user %s to paid (plan: %s)", current_user.email, user.email, plan.name)
+    
+    return MessageResponse(
+        message=f"User {user.email} converted to paid. Assigned plan: {plan.name}"
+    )
