@@ -11,6 +11,7 @@ from app.api.v1.endpoints import (
     ingest,
     analytics,
     warroom,
+    appointments,
 )
 
 api_router = APIRouter()
@@ -25,3 +26,4 @@ api_router.include_router(knowledge.router, prefix="/knowledge", tags=["knowledg
 api_router.include_router(ingest.router, prefix="/ingest", tags=["ingest"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 api_router.include_router(warroom.router, prefix="/warroom", tags=["warroom"])
+api_router.include_router(appointments.router, prefix="/api", tags=["appointments"])
