@@ -34,6 +34,33 @@
     gap: 12px;
   }
   
+  /* Navigation */
+  .nav {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  .nav-link {
+    padding: 8px 16px;
+    color: #94a3b8;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+  }
+  
+  .nav-link:hover {
+    color: #e2e8f0;
+    background: #1e293b;
+  }
+  
+  .nav-link.active {
+    color: #38bdf8;
+    background: #1e293b;
+  }
+  
   .status-indicator {
     display: flex;
     align-items: center;
@@ -116,6 +143,18 @@
     border-radius: 12px;
     padding: 20px;
     border: 1px solid #334155;
+    transition: all 0.2s;
+  }
+  
+  .stat-card.clickable {
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+  }
+  
+  .stat-card.clickable:hover {
+    border-color: #38bdf8;
+    transform: translateY(-2px);
   }
   
   .stat-label {
@@ -307,6 +346,13 @@
       <span>📞</span>
       <span>MindRobo Dashboard</span>
     </h1>
+    <nav class="nav">
+      <a href="/api/v1/dashboard/" class="nav-link active">Dashboard</a>
+      <a href="/api/v1/leads/" class="nav-link">Leads</a>
+      <a href="/settings" class="nav-link">Settings</a>
+      <a href="/api/v1/billing/" class="nav-link">Billing</a>
+      <a href="/logout" class="nav-link">Sign Out</a>
+    </nav>
     <div class="status-indicator">
       <span class="live-dot"></span>
       <span id="ws-status">Connecting...</span>
@@ -319,10 +365,10 @@
       <div class="stat-label">Total Calls</div>
       <div class="stat-value" id="stat-total">0</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Leads Captured</div>
+    <a href="/api/v1/leads/" class="stat-card clickable">
+      <div class="stat-label">New Leads Today</div>
       <div class="stat-value" id="stat-leads">0</div>
-    </div>
+    </a>
     <div class="stat-card">
       <div class="stat-label">Callbacks Scheduled</div>
       <div class="stat-value" id="stat-callbacks">0</div>
@@ -635,6 +681,23 @@
     });
   });
   
+  // Fetch lead stats for dashboard widget
+  function fetchLeadStats() {
+    const businessId = new URLSearchParams(window.location.search).get('business_id') 
+      || localStorage.getItem('business_id') 
+      || '1';
+    
+    fetch(`/api/v1/leads/stats?business_id=${businessId}`)
+      .then(r => r.json())
+      .then(stats => {
+        statLeads.textContent = stats.new_leads_today || 0;
+      })
+      .catch(err => {
+        console.error('Failed to fetch lead stats:', err);
+        // Keep showing call-based leads count as fallback
+      });
+  }
+  
   // Initial load
   fetch('/api/v1/dashboard/recent?limit=50')
     .then(r => r.json())
@@ -642,6 +705,11 @@
       allCalls = calls;
       filterCalls();
     });
+  
+  // Fetch lead stats
+  fetchLeadStats();
+  // Refresh lead stats every 30 seconds
+  setInterval(fetchLeadStats, 30000);
   
   // WebSocket for live updates
   function connectWS() {

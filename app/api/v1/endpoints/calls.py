@@ -94,3 +94,48 @@ async def get_call(
     if not call:
         raise HTTPException(status_code=404, detail="Call not found")
     return call
+
+
+@router.get("/{call_id}/recording")
+async def get_call_recording(
+    call_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+):
+    """Get the call recording URL for playback (Issue #63).
+    
+    Returns the Azure Blob URL if a recording exists.
+    If authenticated, scopes to user's business.
+    """
+    if current_user:
+        # Authenticated: scope to user's business
+        result = await db.execute(
+            select(Business).where(Business.id == current_user.business_id)
+        )
+        business = result.scalar_one_or_none()
+        
+        if not business or not business.retell_agent_id:
+            raise HTTPException(status_code=404, detail="Call not found")
+        
+        result = await db.execute(
+            select(Call).where(
+                and_(
+                    Call.call_id == call_id,
+                    Call.business_id == business.retell_agent_id
+                )
+            )
+        )
+    else:
+        # Unauthenticated: allow any call (backward compatibility)
+        result = await db.execute(
+            select(Call).where(Call.call_id == call_id)
+        )
+    
+    call = result.scalar_one_or_none()
+    if not call:
+        raise HTTPException(status_code=404, detail="Call not found")
+    
+    if not call.recording_url:
+        raise HTTPException(status_code=404, detail="No recording available for this call")
+    
+    return {"recording_url": call.recording_url}

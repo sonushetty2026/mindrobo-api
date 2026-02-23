@@ -3,6 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel
+from app.models.business import LeadHandlingPreference, PhoneSetupType
 
 
 class BusinessCreate(BaseModel):
@@ -24,6 +25,60 @@ class BusinessUpdate(BaseModel):
     twilio_phone_number: str | None = None
 
 
+class PersonalityConfig(BaseModel):
+    """Agent personality configuration (Issue #59)."""
+    business_description: str
+    services_and_prices: str
+    owner_name: str | None = None
+    lead_handling_preference: LeadHandlingPreference
+
+
+class PersonalityOut(BaseModel):
+    """Response schema for personality config."""
+    business_description: str | None = None
+    services_and_prices: str | None = None
+    owner_name: str | None = None
+    lead_handling_preference: LeadHandlingPreference | None = None
+    custom_greeting: str | None = None
+    system_prompt: str | None = None
+
+    class Config:
+        from_attributes = True
+
+
+class PhoneNumberInfo(BaseModel):
+    """Available phone number from Twilio."""
+    phone_number: str
+    friendly_name: str
+    locality: str | None = None
+    region: str | None = None
+
+
+class PhonePurchaseRequest(BaseModel):
+    """Request to purchase a phone number (Issue #61)."""
+    phone_number: str
+
+
+class PhoneForwardRequest(BaseModel):
+    """Request to configure an existing number for forwarding (Issue #61)."""
+    phone_number: str
+
+
+class CallSettingsConfig(BaseModel):
+    """Call forwarding settings (Issue #62)."""
+    ring_timeout_seconds: int
+    owner_phone: str
+
+
+class CallSettingsOut(BaseModel):
+    """Response schema for call settings."""
+    ring_timeout_seconds: int | None = None
+    owner_phone: str | None = None
+
+    class Config:
+        from_attributes = True
+
+
 class BusinessOut(BaseModel):
     id: UUID
     name: str
@@ -35,8 +90,17 @@ class BusinessOut(BaseModel):
     stripe_customer_id: str | None = None
     subscription_status: str | None = None
     is_active: bool
+    ring_timeout_seconds: int | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
+    
+    # Personality fields
+    business_description: str | None = None
+    services_and_prices: str | None = None
+    lead_handling_preference: LeadHandlingPreference | None = None
+    custom_greeting: str | None = None
+    system_prompt: str | None = None
+    phone_setup_type: PhoneSetupType | None = None
 
     class Config:
         from_attributes = True
