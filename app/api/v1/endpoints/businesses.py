@@ -9,7 +9,13 @@ from app.core.database import get_db
 from app.core.deps import get_current_user, get_current_user_optional
 from app.models.business import Business
 from app.models.user import User
-from app.schemas.business import BusinessCreate, BusinessOut, BusinessUpdate
+from app.schemas.business import (
+    BusinessCreate, 
+    BusinessOut, 
+    BusinessUpdate,
+    CallSettingsConfig,
+    CallSettingsOut,
+)
 
 router = APIRouter()
 
@@ -122,3 +128,58 @@ async def update_my_business(
     await db.commit()
     await db.refresh(business)
     return business
+
+
+# Call settings endpoints (Issue #62)
+@router.put("/{business_id}/call-settings", response_model=CallSettingsOut)
+async def save_call_settings(
+    business_id: UUID,
+    settings: CallSettingsConfig,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Configure call forwarding settings (ring timeout and owner phone)."""
+    # Verify user owns this business
+    if current_user.business_id != business_id:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    result = await db.execute(select(Business).where(Business.id == business_id))
+    business = result.scalar_one_or_none()
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    # Update call settings
+    business.ring_timeout_seconds = str(settings.ring_timeout_seconds)
+    business.owner_phone = settings.owner_phone
+    
+    await db.commit()
+    await db.refresh(business)
+    
+    return CallSettingsOut(
+        ring_timeout_seconds=int(business.ring_timeout_seconds) if business.ring_timeout_seconds else None,
+        owner_phone=business.owner_phone,
+    )
+
+
+@router.get("/{business_id}/call-settings", response_model=CallSettingsOut)
+async def get_call_settings(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Retrieve call forwarding settings."""
+    # Verify user owns this business
+    if current_user.business_id != business_id:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    result = await db.execute(select(Business).where(Business.id == business_id))
+    business = result.scalar_one_or_none()
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    return CallSettingsOut(
+        ring_timeout_seconds=int(business.ring_timeout_seconds) if business.ring_timeout_seconds else 20,
+        owner_phone=business.owner_phone,
+    )

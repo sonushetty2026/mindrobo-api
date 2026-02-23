@@ -33,6 +33,9 @@ class Business(Base):
     greeting_script = Column(Text, nullable=True)
     faqs = Column(JSON, nullable=True)  # [{"question": "...", "answer": "..."}, ...]
     
+    # Call forwarding settings (Issue #62)
+    ring_timeout_seconds = Column(String, default="20", nullable=True)  # How long to ring before forwarding
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     

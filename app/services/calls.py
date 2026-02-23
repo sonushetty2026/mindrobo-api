@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.call import Call
 from app.models.business import Business
 from app.services.sms import send_caller_confirmation, send_owner_summary
+from app.services.blob_storage import blob_service
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +67,21 @@ async def save_call(db: AsyncSession, call_data: dict, lead: dict) -> Call:
         service_type=lead.get("service_type"),
         urgency=lead.get("urgency"),
     )
+    
+    # Wire up call recording upload to Azure Blob (Issue #63)
+    recording_url = call_data.get("recording_url")
+    if recording_url:
+        try:
+            blob_url = await blob_service.upload_recording_from_url(
+                call_id=call.call_id,
+                recording_url=recording_url
+            )
+            if blob_url:
+                call.recording_url = blob_url
+                logger.info("Recording uploaded to blob: %s", blob_url)
+        except Exception as e:
+            logger.error("Failed to upload recording for call %s: %s", call.call_id, e)
+    
     db.add(call)
     await db.commit()
     await db.refresh(call)
