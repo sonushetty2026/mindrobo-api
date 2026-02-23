@@ -3,464 +3,321 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MindRobo War Room — Agent Status</title>
+<title>MindRobo War Room — Phase 2 Sprint</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Courier New', monospace;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
     background: #0a0e1a;
     color: #e2e8f0;
-    padding: 24px;
+    padding: 20px;
     min-height: 100vh;
   }
-  
   .container { max-width: 1600px; margin: 0 auto; }
-  
+
   /* Header */
-  .header {
-    margin-bottom: 40px;
-    text-align: center;
-  }
-  
+  .header { text-align: center; margin-bottom: 28px; }
   .title {
-    font-size: 3rem;
-    font-weight: 800;
+    font-size: 2.4rem; font-weight: 800;
     background: linear-gradient(135deg, #38bdf8, #6366f1, #ec4899);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 12px;
-    letter-spacing: -0.02em;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; letter-spacing: -0.02em;
   }
-  
-  .subtitle {
-    font-size: 1.1rem;
-    color: #64748b;
-    font-weight: 500;
-  }
-  
+  .subtitle { font-size: 1rem; color: #64748b; margin-top: 6px; }
+
   /* System Status Bar */
-  .system-status {
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-    border: 1px solid #334155;
-    border-radius: 16px;
-    padding: 24px 32px;
-    margin-bottom: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 24px;
+  .system-bar {
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    border: 1px solid #334155; border-radius: 14px;
+    padding: 18px 28px; margin-bottom: 24px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
   }
-  
-  .status-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+  .sys-item { display: flex; align-items: center; gap: 10px; }
+  .sys-item .icon { font-size: 1.8rem; }
+  .sys-item h4 { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+  .sys-item p { font-size: 1.2rem; font-weight: 700; }
+  .refresh-info { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #64748b; }
+  .pulse { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.2)} }
+
+  /* Progress Bar */
+  .progress-wrap { margin-bottom: 24px; }
+  .progress-label { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.85rem; color: #94a3b8; }
+  .progress-bar { height: 12px; background: #1e293b; border-radius: 6px; overflow: hidden; border: 1px solid #334155; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #22c55e, #06b6d4); border-radius: 6px; transition: width 0.6s ease; }
+
+  /* Two-column layout */
+  .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+  @media (max-width: 1100px) { .main-grid { grid-template-columns: 1fr; } }
+
+  /* Section */
+  .section {
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    border: 1px solid #334155; border-radius: 14px; padding: 20px;
   }
-  
-  .status-icon {
-    font-size: 2rem;
-  }
-  
-  .status-details h3 {
-    font-size: 0.85rem;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 4px;
-  }
-  
-  .status-details p {
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: #e2e8f0;
-  }
-  
-  .refresh-indicator {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 0.9rem;
-    color: #64748b;
-  }
-  
-  .pulse-dot {
-    width: 10px;
-    height: 10px;
-    background: #22c55e;
-    border-radius: 50%;
-    animation: pulse 2s infinite;
-  }
-  
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(1.1); }
-  }
-  
-  /* Agent Grid */
-  .agents-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 24px;
-    margin-bottom: 32px;
-  }
-  
-  /* Agent Card */
+  .section-title { font-size: 1rem; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+  /* Agent Cards */
+  .agent-cards { display: flex; flex-direction: column; gap: 12px; }
   .agent-card {
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-    border: 2px solid #334155;
-    border-radius: 20px;
-    padding: 28px;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: rgba(15,23,42,0.6); border: 1px solid #334155; border-radius: 12px;
+    padding: 14px 16px; border-left: 4px solid var(--c);
+    transition: all 0.2s;
   }
-  
-  .agent-card:hover {
-    transform: translateY(-4px);
-    border-color: var(--agent-color);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-  }
-  
-  .agent-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 5px;
-    background: var(--agent-color);
-  }
-  
-  .agent-card.status-active {
-    border-color: rgba(34, 197, 94, 0.5);
-    --agent-glow: rgba(34, 197, 94, 0.2);
-  }
-  
-  .agent-card.status-thinking {
-    border-color: rgba(251, 191, 36, 0.5);
-    --agent-glow: rgba(251, 191, 36, 0.2);
-  }
-  
-  .agent-card.status-idle {
-    border-color: rgba(100, 116, 139, 0.5);
-    --agent-glow: rgba(100, 116, 139, 0.2);
-  }
-  
-  .agent-card.status-offline {
-    border-color: rgba(239, 68, 68, 0.5);
-    --agent-glow: rgba(239, 68, 68, 0.2);
-  }
-  
-  /* Agent Header */
-  .agent-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-  }
-  
-  .agent-info {
-    flex: 1;
-  }
-  
-  .agent-name {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #e2e8f0;
-    margin-bottom: 4px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  
+  .agent-card:hover { border-color: var(--c); background: rgba(15,23,42,0.9); }
+  .agent-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .agent-name { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
   .agent-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--agent-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #0a0e1a;
+    width: 28px; height: 28px; border-radius: 50%; background: var(--c);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 700; color: #0a0e1a;
   }
-  
-  .agent-role {
-    font-size: 0.9rem;
-    color: #94a3b8;
-    font-weight: 500;
+  .model-tag { font-size: 0.65rem; background: rgba(99,102,241,0.2); color: #a5b4fc; padding: 2px 8px; border-radius: 8px; }
+  .badge {
+    padding: 3px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em;
   }
-  
-  /* Status Badge */
-  .status-badge {
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+  .badge.active { background: rgba(34,197,94,0.2); color: #22c55e; }
+  .badge.reviewing { background: rgba(251,191,36,0.2); color: #fbbf24; }
+  .badge.idle { background: rgba(100,116,139,0.2); color: #94a3b8; }
+  .agent-task { font-size: 0.82rem; color: #cbd5e1; font-family: 'Courier New', monospace; margin-bottom: 4px; }
+  .agent-branch { font-size: 0.72rem; color: #64748b; }
+  .agent-branch code { background: rgba(56,189,248,0.1); color: #38bdf8; padding: 1px 6px; border-radius: 4px; }
+
+  /* Pipeline */
+  .pipeline { display: flex; flex-direction: column; gap: 8px; }
+  .pipe-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; background: rgba(15,23,42,0.6);
+    border: 1px solid #334155; border-radius: 10px;
+    font-size: 0.85rem;
   }
-  
-  .status-badge::before {
-    content: '';
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: currentColor;
+  .pipe-icon { font-size: 1.2rem; flex-shrink: 0; }
+  .pipe-title { flex: 1; color: #cbd5e1; }
+  .pipe-issue { color: #64748b; font-size: 0.75rem; }
+  .pipe-wave {
+    font-size: 0.65rem; padding: 2px 8px; border-radius: 8px;
+    background: rgba(99,102,241,0.15); color: #a5b4fc;
   }
-  
-  .status-badge.active {
-    background: rgba(34, 197, 94, 0.2);
-    color: #22c55e;
+  .pipe-status { font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 10px; }
+  .pipe-status.done { background: rgba(34,197,94,0.15); color: #22c55e; }
+  .pipe-status.in_review { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .pipe-status.in_progress { background: rgba(56,189,248,0.15); color: #38bdf8; }
+  .pipe-status.pending { background: rgba(100,116,139,0.15); color: #94a3b8; }
+
+  /* PR List */
+  .pr-list { display: flex; flex-direction: column; gap: 8px; }
+  .pr-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; background: rgba(15,23,42,0.6);
+    border: 1px solid #334155; border-radius: 10px; font-size: 0.82rem;
   }
-  
-  .status-badge.thinking {
-    background: rgba(251, 191, 36, 0.2);
-    color: #fbbf24;
+  .pr-num { color: #38bdf8; font-weight: 700; min-width: 50px; }
+  .pr-title { flex: 1; color: #cbd5e1; }
+  .pr-branch { font-size: 0.7rem; color: #64748b; }
+  .pr-branch code { background: rgba(56,189,248,0.1); color: #38bdf8; padding: 1px 6px; border-radius: 4px; }
+
+  /* Blockers */
+  .blocker-box {
+    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 10px; padding: 14px; margin-bottom: 24px; display: none;
   }
-  
-  .status-badge.idle {
-    background: rgba(100, 116, 139, 0.2);
-    color: #94a3b8;
-  }
-  
-  .status-badge.offline {
-    background: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
-  }
-  
-  /* Last Action */
-  .agent-action {
-    background: rgba(15, 23, 42, 0.6);
-    border-radius: 12px;
-    padding: 16px;
-    margin-top: 16px;
-  }
-  
-  .action-label {
-    font-size: 0.75rem;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 8px;
-  }
-  
-  .action-text {
-    font-size: 0.95rem;
-    color: #cbd5e1;
-    line-height: 1.5;
-    font-family: 'Courier New', monospace;
-  }
-  
-  .last-update {
-    font-size: 0.75rem;
-    color: #475569;
-    margin-top: 12px;
-    font-style: italic;
-  }
-  
-  /* Loading State */
-  .loading {
-    text-align: center;
-    padding: 60px 20px;
-  }
-  
-  .loading-spinner {
-    width: 60px;
-    height: 60px;
-    border: 5px solid #334155;
-    border-top-color: #38bdf8;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 20px;
-  }
-  
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-  
+  .blocker-box.visible { display: block; }
+  .blocker-title { color: #ef4444; font-weight: 700; font-size: 0.9rem; margin-bottom: 8px; }
+  .blocker-item { color: #fca5a5; font-size: 0.85rem; padding: 4px 0; }
+
   /* Footer */
-  .footer {
-    text-align: center;
-    padding: 32px 0;
-    color: #64748b;
-    font-size: 0.9rem;
-  }
-  
-  /* Responsive */
+  .footer { text-align: center; padding: 20px 0; color: #475569; font-size: 0.8rem; }
+
+  /* Mobile */
   @media (max-width: 768px) {
-    .title {
-      font-size: 2rem;
-    }
-    
-    .agents-grid {
-      grid-template-columns: 1fr;
-    }
-    
-    .system-status {
-      flex-direction: column;
-      align-items: flex-start;
-    }
+    .title { font-size: 1.6rem; }
+    body { padding: 12px; }
+    .system-bar { flex-direction: column; align-items: flex-start; }
   }
 </style>
 </head>
 <body>
 <div class="container">
-  <!-- Header -->
   <div class="header">
     <h1 class="title">🚀 MindRobo War Room</h1>
-    <p class="subtitle">Real-time Agent Status Monitor</p>
+    <p class="subtitle">Phase 2 Sprint — Real-time Status</p>
   </div>
-  
-  <!-- System Status -->
-  <div class="system-status">
-    <div class="status-item">
-      <div class="status-icon">⚡</div>
-      <div class="status-details">
-        <h3>System Status</h3>
-        <p id="system-status">—</p>
+
+  <!-- System Bar -->
+  <div class="system-bar">
+    <div class="sys-item">
+      <div class="icon">⚡</div>
+      <div><h4>System</h4><p id="sys-status">—</p></div>
+    </div>
+    <div class="sys-item">
+      <div class="icon">🤖</div>
+      <div><h4>Active Agents</h4><p id="active-count">—</p></div>
+    </div>
+    <div class="sys-item">
+      <div class="icon">📊</div>
+      <div><h4>Sprint Progress</h4><p id="sprint-progress">—</p></div>
+    </div>
+    <div class="refresh-info">
+      <span class="pulse"></span>
+      <span id="refresh-text">Auto-refresh in 15s</span>
+    </div>
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span>Phase 2 Completion</span>
+      <span id="progress-pct">0%</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- Blockers -->
+  <div class="blocker-box" id="blocker-box">
+    <div class="blocker-title">🚨 BLOCKERS</div>
+    <div id="blocker-list"></div>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="main-grid">
+    <!-- Left: Agents -->
+    <div>
+      <div class="section">
+        <div class="section-title">🤖 Agent Status</div>
+        <div class="agent-cards" id="agents-container">
+          <div style="text-align:center;padding:30px;color:#64748b">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Open PRs -->
+      <div class="section" style="margin-top:24px">
+        <div class="section-title">🔀 Open Pull Requests</div>
+        <div class="pr-list" id="prs-container">
+          <div style="text-align:center;padding:20px;color:#64748b">Loading...</div>
+        </div>
       </div>
     </div>
-    
-    <div class="status-item">
-      <div class="status-icon">🤖</div>
-      <div class="status-details">
-        <h3>Active Agents</h3>
-        <p id="active-count">—</p>
+
+    <!-- Right: Pipeline -->
+    <div>
+      <div class="section">
+        <div class="section-title">📋 Sprint Pipeline — 9 Issues</div>
+        <div class="pipeline" id="pipeline-container">
+          <div style="text-align:center;padding:30px;color:#64748b">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Recently Merged -->
+      <div class="section" style="margin-top:24px">
+        <div class="section-title">✅ Recently Merged</div>
+        <div class="pr-list" id="merged-container">
+          <div style="text-align:center;padding:20px;color:#64748b">Loading...</div>
+        </div>
       </div>
     </div>
-    
-    <div class="refresh-indicator">
-      <span class="pulse-dot"></span>
-      <span id="refresh-status">Auto-refresh in 10s</span>
-    </div>
   </div>
-  
-  <!-- Agents Grid -->
-  <div id="agents-container">
-    <div class="loading">
-      <div class="loading-spinner"></div>
-      <p>Loading agent status...</p>
-    </div>
-  </div>
-  
-  <!-- Footer -->
+
   <div class="footer">
-    <p>Last updated: <span id="last-refresh">—</span></p>
+    <p>Last updated: <span id="last-refresh">—</span> · Auto-refreshes every 15 seconds</p>
   </div>
 </div>
 
 <script>
-  let refreshTimer = 10;
-  let agents = [];
-  
-  // Agent color mapping
-  const agentColors = {
-    'orchestrator': '#3b82f6', // blue
-    'backend': '#8b5cf6',      // purple
-    'frontend': '#06b6d4',     // cyan
-    'qa': '#22c55e',           // green
-    'ingestion': '#f59e0b',    // orange
-  };
-  
-  // Format time ago
-  function timeAgo(isoString) {
-    if (!isoString) return '—';
-    const date = new Date(isoString);
-    const now = new Date();
-    const seconds = Math.floor((now - date) / 1000);
-    
-    if (seconds < 60) return 'Just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-    return `${Math.floor(seconds / 86400)}d ago`;
-  }
-  
-  // Render agent card
-  function renderAgentCard(agent) {
-    const color = agentColors[agent.id] || '#64748b';
-    const initial = agent.name.charAt(0);
-    
-    return `
-      <div class="agent-card status-${agent.status}" style="--agent-color: ${color}">
-        <div class="agent-header">
-          <div class="agent-info">
-            <div class="agent-name">
-              <div class="agent-avatar" style="background: ${color}">${initial}</div>
-              ${agent.name}
-            </div>
-            <div class="agent-role">${agent.role}</div>
-          </div>
-          <div class="status-badge ${agent.status}">${agent.status}</div>
+const COLORS = {
+  orchestrator: '#3b82f6', backend: '#8b5cf6', frontend: '#06b6d4',
+  qa: '#22c55e', ingestion: '#f59e0b'
+};
+const STATUS_ICONS = { done: '✅', in_review: '🔍', in_progress: '🔄', pending: '⏳' };
+const STATUS_LABELS = { done: 'Done', in_review: 'In Review', in_progress: 'In Progress', pending: 'Pending' };
+
+let timer = 15;
+
+function renderAgent(a) {
+  const c = COLORS[a.id] || '#64748b';
+  return `
+    <div class="agent-card" style="--c:${c}">
+      <div class="agent-top">
+        <div class="agent-name">
+          <div class="agent-avatar" style="background:${c}">${a.name[0]}</div>
+          ${a.name}
+          <span class="model-tag">${a.model || 'Sonnet'}</span>
         </div>
-        
-        <div class="agent-action">
-          <div class="action-label">Last Action</div>
-          <div class="action-text">${agent.last_action || 'No recent activity'}</div>
-          <div class="last-update">${timeAgo(agent.last_update)}</div>
-        </div>
+        <span class="badge ${a.status}">${a.status}</span>
       </div>
-    `;
-  }
-  
-  // Update dashboard
-  async function updateDashboard() {
-    try {
-      const response = await fetch('/api/v1/warroom/status');
-      const data = await response.json();
-      
-      // Update system status
-      document.getElementById('system-status').textContent = 
-        data.system_status === 'operational' ? '🟢 Operational' : '🔴 Issues Detected';
-      document.getElementById('active-count').textContent = 
-        `${data.active_agents} / ${data.total_agents}`;
-      
-      // Render agent cards
-      const container = document.getElementById('agents-container');
-      container.innerHTML = '<div class="agents-grid">' + 
-        data.agents.map(renderAgentCard).join('') + 
-        '</div>';
-      
-      // Update last refresh time
-      document.getElementById('last-refresh').textContent = 
-        new Date(data.last_refresh).toLocaleString();
-      
-      agents = data.agents;
-      
-    } catch (error) {
-      console.error('Failed to fetch agent status:', error);
-      document.getElementById('agents-container').innerHTML = `
-        <div class="loading">
-          <div style="font-size: 3rem; margin-bottom: 20px;">⚠️</div>
-          <p style="color: #ef4444;">Failed to load agent status. Retrying in 10s...</p>
-        </div>
-      `;
+      <div class="agent-task">${a.current_task || 'No active task'}</div>
+      ${a.branch && a.branch !== '—' ? `<div class="agent-branch">Branch: <code>${a.branch}</code></div>` : ''}
+      ${a.prs && a.prs.length ? a.prs.map(pr => `<div class="agent-branch" style="margin-top:3px">PR: <code>#${pr.number}</code></div>`).join('') : ''}
+    </div>`;
+}
+
+function renderPipeline(item) {
+  const icon = STATUS_ICONS[item.status] || '⏳';
+  const label = STATUS_LABELS[item.status] || item.status;
+  return `
+    <div class="pipe-item">
+      <div class="pipe-icon">${icon}</div>
+      <div class="pipe-title">
+        ${item.title}
+        <span class="pipe-issue">#${item.issue}</span>
+      </div>
+      <span class="pipe-wave">Wave ${item.wave}</span>
+      <span class="pipe-status ${item.status}">${label}</span>
+    </div>`;
+}
+
+function renderPR(pr, isMerged) {
+  return `
+    <div class="pr-item">
+      <span class="pr-num">#${pr.number}</span>
+      <span class="pr-title">${pr.title}</span>
+      ${pr.branch ? `<span class="pr-branch"><code>${pr.branch}</code></span>` : ''}
+    </div>`;
+}
+
+async function refresh() {
+  try {
+    const r = await fetch('/api/v1/warroom/status');
+    const d = await r.json();
+
+    document.getElementById('sys-status').textContent = d.system_status === 'operational' ? '🟢 Operational' : '🔴 Issues';
+    document.getElementById('active-count').textContent = `${d.active_agents} / ${d.total_agents}`;
+    document.getElementById('sprint-progress').textContent = d.sprint_progress;
+    document.getElementById('progress-pct').textContent = d.sprint_percent + '%';
+    document.getElementById('progress-fill').style.width = d.sprint_percent + '%';
+
+    document.getElementById('agents-container').innerHTML = d.agents.map(renderAgent).join('');
+    document.getElementById('pipeline-container').innerHTML = d.pipeline.map(renderPipeline).join('');
+    document.getElementById('prs-container').innerHTML = d.open_prs.length
+      ? d.open_prs.map(pr => renderPR(pr, false)).join('')
+      : '<div style="text-align:center;padding:16px;color:#64748b">No open PRs — all merged or pending</div>';
+    document.getElementById('merged-container').innerHTML = d.merged_prs.length
+      ? d.merged_prs.map(pr => renderPR(pr, true)).join('')
+      : '<div style="text-align:center;padding:16px;color:#64748b">None yet</div>';
+
+    const bb = document.getElementById('blocker-box');
+    if (d.blockers && d.blockers.length) {
+      bb.classList.add('visible');
+      document.getElementById('blocker-list').innerHTML = d.blockers.map(b => `<div class="blocker-item">⚠️ ${b}</div>`).join('');
+    } else {
+      bb.classList.remove('visible');
     }
+
+    document.getElementById('last-refresh').textContent = new Date(d.last_refresh).toLocaleString();
+  } catch (e) {
+    console.error('Refresh failed:', e);
   }
-  
-  // Auto-refresh timer
-  function startRefreshTimer() {
-    setInterval(() => {
-      refreshTimer--;
-      if (refreshTimer <= 0) {
-        refreshTimer = 10;
-        updateDashboard();
-      }
-      document.getElementById('refresh-status').textContent = 
-        `Auto-refresh in ${refreshTimer}s`;
-    }, 1000);
-  }
-  
-  // Initial load
-  updateDashboard();
-  startRefreshTimer();
+}
+
+setInterval(() => {
+  timer--;
+  if (timer <= 0) { timer = 15; refresh(); }
+  document.getElementById('refresh-text').textContent = `Auto-refresh in ${timer}s`;
+}, 1000);
+
+refresh();
 </script>
 </body>
 </html>
