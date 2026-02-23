@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<parameter name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MindRobo — Onboarding</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -529,21 +529,21 @@
       <label>Lead Handling Preference</label>
       <div class="radio-group">
         <label class="radio-option" id="radio-appointment">
-          <input type="radio" name="lead-handling" value="appointment" checked>
+          <input type="radio" name="lead-handling" value="book_appointment" checked>
           <div>
             <div class="radio-label">Book Appointment</div>
             <div class="radio-description">AI will try to book directly if calendar is connected</div>
           </div>
         </label>
         <label class="radio-option" id="radio-sms">
-          <input type="radio" name="lead-handling" value="sms">
+          <input type="radio" name="lead-handling" value="send_sms">
           <div>
             <div class="radio-label">Send SMS to Owner</div>
             <div class="radio-description">Notify owner via text message with lead details</div>
           </div>
         </label>
         <label class="radio-option" id="radio-message">
-          <input type="radio" name="lead-handling" value="message">
+          <input type="radio" name="lead-handling" value="take_message">
           <div>
             <div class="radio-label">Take a Message</div>
             <div class="radio-description">AI will collect contact info and reason for calling</div>
@@ -824,11 +824,10 @@
     
     // Collect data
     personalityData = {
-      businessName: businessName,
-      description: description,
-      servicesPrices: servicesPricesInput.value.trim(),
-      ownerName: ownerNameInput.value.trim(),
-      leadHandling: document.querySelector('input[name="lead-handling"]:checked').value
+      business_description: description,
+      services_and_prices: servicesPricesInput.value.trim(),
+      owner_name: ownerNameInput.value.trim() || null,
+      lead_handling_preference: document.querySelector('input[name="lead-handling"]:checked').value
     };
     
     savePersonalityBtn.disabled = true;
@@ -836,7 +835,7 @@
     
     try {
       // POST to backend API
-      const response = await fetch(`/api/v1/business/${businessId}/personality`, {
+      const response = await fetch(`/api/v1/businesses/${businessId}/personality`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(personalityData),
