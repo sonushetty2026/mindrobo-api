@@ -33,17 +33,58 @@ app.add_middleware(
 
 app.include_router(api_router, prefix="/api/v1")
 
-# Load landing page template
+# Load templates
 TEMPLATES_DIR = Path(__file__).parent / "templates"
-LANDING_PAGE_PATH = TEMPLATES_DIR / "index.html"
+
+
+def load_template(filename: str) -> str:
+    """Load an HTML template from the templates directory."""
+    template_path = TEMPLATES_DIR / filename
+    if template_path.exists():
+        return template_path.read_text()
+    return f"<html><body><h1>Template not found: {filename}</h1></body></html>"
 
 
 @app.get("/", response_class=HTMLResponse)
 async def landing_page():
-    """Serve the main landing page with dashboard links."""
-    if LANDING_PAGE_PATH.exists():
-        return LANDING_PAGE_PATH.read_text()
-    return "<html><body><h1>MindRobo API</h1><p>Landing page not found</p></body></html>"
+    """Serve the marketing landing page."""
+    return load_template("landing.html")
+
+
+@app.get("/signup", response_class=HTMLResponse)
+async def signup_page():
+    """Serve the signup page."""
+    return load_template("signup.html")
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page():
+    """Serve the login page."""
+    return load_template("login.html")
+
+
+@app.get("/forgot-password", response_class=HTMLResponse)
+async def forgot_password_page():
+    """Serve the forgot password page."""
+    return load_template("forgot-password.html")
+
+
+@app.get("/reset-password", response_class=HTMLResponse)
+async def reset_password_page():
+    """Serve the password reset page with token."""
+    return load_template("reset-password.html")
+
+
+@app.get("/verify-email", response_class=HTMLResponse)
+async def verify_email_page():
+    """Serve the email verification page with token."""
+    return load_template("verify-email.html")
+
+
+@app.get("/logout")
+async def logout():
+    """Logout redirect - client will clear JWT and redirect."""
+    return RedirectResponse(url="/login")
 
 
 @app.get("/health")
