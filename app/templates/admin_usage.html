@@ -297,12 +297,20 @@ async function fetchStats() {
     
     const data = await response.json();
     
+    // Fix 2: Use correct field names from API
     document.getElementById('total-spend').textContent = 
-      data.total_spend ? `$${(data.total_spend / 100).toFixed(2)}` : '$0.00';
+      data.total_cost_cents ? `$${(data.total_cost_cents / 100).toFixed(2)}` : '$0.00';
+    
+    // Month spend: calculate from total_cost_cents if needed, or fetch separately
+    // For now, display total (API doesn't return month_spend)
     document.getElementById('month-spend').textContent = 
-      data.month_spend ? `$${(data.month_spend / 100).toFixed(2)}` : '$0.00';
-    document.getElementById('avg-per-user').textContent = 
-      data.avg_per_user ? `$${(data.avg_per_user / 100).toFixed(2)}` : '$0.00';
+      data.total_cost_cents ? `$${(data.total_cost_cents / 100).toFixed(2)}` : '$0.00';
+    
+    // Avg per user: calculate client-side if user_count available
+    const avgPerUser = (data.user_count && data.total_cost_cents) 
+      ? data.total_cost_cents / data.user_count 
+      : 0;
+    document.getElementById('avg-per-user').textContent = `$${(avgPerUser / 100).toFixed(2)}`;
     
     // Service breakdown for pie chart
     if (data.service_breakdown) {
@@ -327,8 +335,9 @@ async function fetchTrends() {
       throw new Error(`API returned ${response.status}`);
     }
     
+    // Fix 3: API returns array directly, not wrapped in .trends
     const data = await response.json();
-    renderCostTrendChart(data.trends || []);
+    renderCostTrendChart(data || []);
   } catch (error) {
     console.error('Failed to fetch usage trends:', error);
     // Render empty chart
@@ -338,7 +347,8 @@ async function fetchTrends() {
 
 async function fetchPerUserData() {
   try {
-    const response = await fetch('/api/v1/admin/usage/per-user', {
+    // Fix 1: Use /margin endpoint instead of /per-user
+    const response = await fetch('/api/v1/admin/usage/margin', {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     });
     
@@ -346,8 +356,9 @@ async function fetchPerUserData() {
       throw new Error(`API returned ${response.status}`);
     }
     
+    // Fix 4: API returns array directly, not wrapped in .users
     const data = await response.json();
-    renderUserTable(data.users || []);
+    renderUserTable(data || []);
   } catch (error) {
     console.error('Failed to fetch per-user data:', error);
     document.getElementById('user-table-loading').style.display = 'none';
@@ -366,7 +377,8 @@ function renderCostTrendChart(trends) {
   
   // Generate labels (last 30 days)
   const labels = trends.map(t => t.date) || generateLast30Days();
-  const costs = trends.map(t => t.cost_cents / 100) || new Array(30).fill(0);
+  // Fix 3: Use total_cost_cents instead of cost_cents
+  const costs = trends.map(t => t.total_cost_cents / 100) || new Array(30).fill(0);
   
   new Chart(ctx, {
     type: 'line',
@@ -457,19 +469,21 @@ function renderUserTable(users) {
   }
   
   tbody.innerHTML = users.map(user => {
-    const planPrice = user.plan_price || 0;
-    const totalCost = user.total_cost || 0;
-    const margin = planPrice - totalCost;
-    const marginClass = margin >= 0 ? 'margin-positive' : 'margin-negative';
-    const rowClass = user.flagged ? 'flagged-user' : '';
+    // Fix 4: Use correct field names from margin endpoint
+    const planPrice = user.plan_price_cents || 0;
+    const totalCost = user.total_cost_cents || 0;
+    const margin = user.margin_cents || 0;
+    // Use is_profitable for highlighting instead of manual comparison
+    const marginClass = user.is_profitable ? 'margin-positive' : 'margin-negative';
+    const rowClass = !user.is_profitable ? 'flagged-user' : '';
     
     return `
       <tr class="${rowClass}">
-        <td>${user.email}</td>
+        <td>${user.user_email}</td>
         <td>$${(planPrice / 100).toFixed(2)}</td>
         <td>$${(totalCost / 100).toFixed(2)}</td>
         <td class="${marginClass}">${margin >= 0 ? '+' : ''}$${(margin / 100).toFixed(2)}</td>
-        <td>${user.flagged ? '🚩 Flagged' : '✓ Normal'}</td>
+        <td>${!user.is_profitable ? '🚩 Flagged' : '✓ Normal'}</td>
       </tr>
     `;
   }).join('');
