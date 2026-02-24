@@ -552,12 +552,7 @@
       </div>
     </div>
     
-    <div class="preview-box">
-      <div class="preview-label">🎤 AI Greeting Preview</div>
-      <div class="preview-text" id="greeting-preview">
-        <span class="preview-placeholder">Fill out the form above to see how your AI will greet callers...</span>
-      </div>
-    </div>
+    <!-- Removed: AI Greeting Preview panel as requested -->
     
     <div class="button-group">
       <button class="btn btn-secondary" id="back-to-ingest">← Back</button>
@@ -657,7 +652,7 @@
   const servicesPricesInput = document.getElementById('services-prices');
   const ownerNameInput = document.getElementById('owner-name');
   const leadHandlingRadios = document.querySelectorAll('input[name="lead-handling"]');
-  const greetingPreview = document.getElementById('greeting-preview');
+  // Removed: const greetingPreview = document.getElementById('greeting-preview');
   const savePersonalityBtn = document.getElementById('save-personality-btn');
   const personalitySpinner = document.getElementById('personality-spinner');
   const businessNameError = document.getElementById('business-name-error');
@@ -754,31 +749,9 @@
     }
   });
   
-  // Personality form - live preview update
-  function updateGreetingPreview() {
-    const business = businessNameInput.value.trim();
-    const owner = ownerNameInput.value.trim();
-    
-    if (!business) {
-      greetingPreview.innerHTML = '<span class="preview-placeholder">Fill out the form above to see how your AI will greet callers...</span>';
-      return;
-    }
-    
-    let greeting = `Hi, thanks for calling ${business}!`;
-    
-    if (owner) {
-      greeting += ` I'm ${owner}'s AI assistant.`;
-    } else {
-      greeting += ` I'm the AI assistant.`;
-    }
-    
-    greeting += ' How can I help you today?';
-    
-    greetingPreview.textContent = greeting;
-  }
+  // Removed: updateGreetingPreview function
   
-  businessNameInput.addEventListener('input', updateGreetingPreview);
-  ownerNameInput.addEventListener('input', updateGreetingPreview);
+  // Removed: event listeners for greeting preview
   
   // Radio button styling
   document.querySelectorAll('.radio-option').forEach(option => {
