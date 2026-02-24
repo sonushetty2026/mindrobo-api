@@ -120,12 +120,14 @@ async def get_lead_stats(
     db: AsyncSession = Depends(get_db),
 ):
     """Get lead statistics."""
+    from sqlalchemy import case, cast, String
+    status_text = cast(Lead.status, String)
     query = select(
         func.count(Lead.id).label("total"),
-        func.sum(func.cast(Lead.status == LeadStatus.NEW, db.bind.dialect.name == 'postgresql' and 'INTEGER' or 'REAL')).label("new"),
-        func.sum(func.cast(Lead.status == LeadStatus.CONTACTED, db.bind.dialect.name == 'postgresql' and 'INTEGER' or 'REAL')).label("contacted"),
-        func.sum(func.cast(Lead.status == LeadStatus.CONVERTED, db.bind.dialect.name == 'postgresql' and 'INTEGER' or 'REAL')).label("converted"),
-        func.sum(func.cast(Lead.status == LeadStatus.LOST, db.bind.dialect.name == 'postgresql' and 'INTEGER' or 'REAL')).label("lost"),
+        func.sum(case((status_text == "new", 1), else_=0)).label("new"),
+        func.sum(case((status_text == "contacted", 1), else_=0)).label("contacted"),
+        func.sum(case((status_text == "converted", 1), else_=0)).label("converted"),
+        func.sum(case((status_text == "lost", 1), else_=0)).label("lost"),
     )
     
     if business_id:

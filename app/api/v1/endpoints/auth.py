@@ -309,13 +309,40 @@ async def resend_verification(data: ResendVerification, db: AsyncSession = Depen
     user.verification_expires = verification_expires
     await db.commit()
     
-    # TODO: Send email via SendGrid (stubbed for now)
+    # Send verification email via SendGrid
     logger.info(
         "🔐 NEW VERIFICATION TOKEN for %s: %s (expires: %s)",
         user.email,
         verification_token,
         verification_expires,
     )
+    
+    verify_url = f"http://52.159.104.87:8000/verify-email?token={verification_token}"
+    try:
+        await email_service.send_email(
+            to=user.email,
+            subject="Verify your MindRobo account",
+            html_body=f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <h2 style="color: #4A90E2;">Verify your MindRobo account</h2>
+                        <p>Hi {user.full_name or user.email},</p>
+                        <p>Here is your new verification link:</p>
+                        <p>
+                            <a href="{verify_url}"
+                               style="display: inline-block; padding: 12px 24px; background-color: #4A90E2;
+                                      color: white; text-decoration: none; border-radius: 6px;">
+                                Verify Email
+                            </a>
+                        </p>
+                        <p style="color: #666; font-size: 14px;">This link expires in 24 hours.</p>
+                    </div>
+                </body>
+            </html>"""
+        )
+    except Exception as e:
+        logger.error(f"Failed to resend verification email: {e}")
     
     return {"message": "If that email exists, a new verification link has been sent."}
 

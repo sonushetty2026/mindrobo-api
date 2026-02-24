@@ -91,9 +91,10 @@ async def get_usage_limits(
     
     Protected by trial check.
     """
-    # Count calls
+    # Count calls (Call.business_id is VARCHAR, cast UUID to str)
+    biz_id_str = str(current_user.business_id)
     calls_query = select(func.count(Call.id)).where(
-        Call.business_id == current_user.business_id
+        Call.business_id == biz_id_str
     )
     calls_result = await db.execute(calls_query)
     calls_used = calls_result.scalar_one()
