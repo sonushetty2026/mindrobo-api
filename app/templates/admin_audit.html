@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindRobo — Admin Audit Log</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 24px;
+  }
+  
+  .container { max-width: 1400px; margin: 0 auto; }
+  
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  
+  h1 {
+    font-size: 2rem;
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .nav-links {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .nav-link {
+    padding: 10px 20px;
+    background: #1e293b;
+    color: #94a3b8;
+    text-decoration: none;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+  }
+  
+  .nav-link:hover {
+    background: #334155;
+    color: #e2e8f0;
+  }
+  
+  .nav-link.active {
+    background: #0ea5e9;
+    color: white;
+    border-color: #0ea5e9;
+  }
+  
+  /* Filters */
+  .filters {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: end;
+  }
+  
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .filter-group label {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .filter-group select,
+  .filter-group input {
+    padding: 10px 14px;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    color: #e2e8f0;
+    font-size: 0.95rem;
+    min-width: 180px;
+  }
+  
+  .filter-group select:focus,
+  .filter-group input:focus {
+    outline: none;
+    border-color: #38bdf8;
+  }
+  
+  .btn {
+    padding: 10px 24px;
+    background: #0ea5e9;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .btn:hover {
+    background: #0284c7;
+  }
+  
+  /* Audit Table */
+  .audit-table-container {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  thead {
+    background: #0f172a;
+    border-bottom: 2px solid #334155;
+  }
+  
+  th {
+    padding: 16px;
+    text-align: left;
+    font-size: 0.85rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+  
+  tbody tr {
+    border-bottom: 1px solid #334155;
+    transition: background 0.2s;
+  }
+  
+  tbody tr:hover {
+    background: rgba(56, 189, 248, 0.05);
+  }
+  
+  td {
+    padding: 16px;
+    font-size: 0.95rem;
+  }
+  
+  .timestamp {
+    color: #94a3b8;
+    font-size: 0.85rem;
+  }
+  
+  .action-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  
+  .action-create { background: #10b981; color: white; }
+  .action-update { background: #f59e0b; color: white; }
+  .action-delete { background: #ef4444; color: white; }
+  .action-pause { background: #8b5cf6; color: white; }
+  .action-convert { background: #06b6d4; color: white; }
+  
+  .details {
+    color: #64748b;
+    font-size: 0.9rem;
+  }
+  
+  .loading {
+    text-align: center;
+    padding: 40px;
+    color: #64748b;
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #64748b;
+  }
+  
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    body { padding: 12px; }
+    h1 { font-size: 1.5rem; }
+    .filters { flex-direction: column; }
+    .filter-group select, .filter-group input { width: 100%; }
+    
+    /* Make table scrollable on mobile */
+    .audit-table-container {
+      overflow-x: auto;
+    }
+    
+    table {
+      min-width: 800px;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>📋 Audit Log</h1>
+    <nav class="nav-links">
+      <a href="/admin" class="nav-link">Dashboard</a>
+      <a href="/admin/users" class="nav-link">Users</a>
+      <a href="/admin/trials" class="nav-link">Trials</a>
+      <a href="/admin/usage" class="nav-link">Usage</a>
+      <a href="/admin/audit" class="nav-link active">Audit</a>
+      <a href="/admin/health-check" class="nav-link">Health</a>
+    </nav>
+  </div>
+  
+  <!-- Filters -->
+  <div class="filters">
+    <div class="filter-group">
+      <label>Action Type</label>
+      <select id="actionFilter">
+        <option value="">All Actions</option>
+        <option value="create">Create</option>
+        <option value="update">Update</option>
+        <option value="delete">Delete</option>
+        <option value="pause">Pause/Unpause</option>
+        <option value="convert">Convert Trial</option>
+      </select>
+    </div>
+    
+    <div class="filter-group">
+      <label>Start Date</label>
+      <input type="date" id="startDate" />
+    </div>
+    
+    <div class="filter-group">
+      <label>End Date</label>
+      <input type="date" id="endDate" />
+    </div>
+    
+    <button class="btn" onclick="applyFilters()">Apply Filters</button>
+  </div>
+  
+  <!-- Audit Table -->
+  <div class="audit-table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Admin</th>
+          <th>Action</th>
+          <th>Target User</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody id="auditTableBody">
+        <tr>
+          <td colspan="5" class="loading">Loading audit logs...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// Expected API schema (to be implemented by Backend):
+// GET /api/v1/admin/audit?action=&start_date=&end_date=
+// Response: {
+//   "logs": [
+//     {
+//       "id": "uuid",
+//       "timestamp": "2024-01-15T14:30:00Z",
+//       "admin_email": "admin@mindrobo.com",
+//       "action": "pause_user" | "convert_trial" | "update_role" | "delete_user" | etc.,
+//       "target_user_email": "user@example.com",
+//       "details": "Changed role from user to admin"
+//     }
+//   ],
+//   "total": 123
+// }
+
+const API_BASE = '/api/v1';
+let currentToken = null;
+
+// Check authentication
+async function checkAuth() {
+  currentToken = localStorage.getItem('token');
+  if (!currentToken) {
+    window.location.href = '/login';
+    return false;
+  }
+  return true;
+}
+
+// Format timestamp
+function formatTimestamp(isoString) {
+  const date = new Date(isoString);
+  return date.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+// Get action badge HTML
+function getActionBadge(action) {
+  const actionMap = {
+    'pause_user': { class: 'action-pause', label: 'Pause' },
+    'unpause_user': { class: 'action-pause', label: 'Unpause' },
+    'convert_trial': { class: 'action-convert', label: 'Convert' },
+    'update_role': { class: 'action-update', label: 'Update Role' },
+    'delete_user': { class: 'action-delete', label: 'Delete' },
+    'create_user': { class: 'action-create', label: 'Create' },
+    'extend_trial': { class: 'action-update', label: 'Extend Trial' }
+  };
+  
+  const mapped = actionMap[action] || { class: 'action-update', label: action };
+  return `<span class="action-badge ${mapped.class}">${mapped.label}</span>`;
+}
+
+// Load audit logs
+async function loadAuditLogs(filters = {}) {
+  if (!await checkAuth()) return;
+  
+  const tbody = document.getElementById('auditTableBody');
+  tbody.innerHTML = '<tr><td colspan="5" class="loading">Loading audit logs...</td></tr>';
+  
+  // Build query params
+  const params = new URLSearchParams();
+  if (filters.action) params.append('action', filters.action);
+  if (filters.start_date) params.append('start_date', filters.start_date);
+  if (filters.end_date) params.append('end_date', filters.end_date);
+  
+  try {
+    const response = await fetch(`${API_BASE}/admin/audit?${params}`, {
+      headers: {
+        'Authorization': `Bearer ${currentToken}`
+      }
+    });
+    
+    if (response.status === 401) {
+      window.location.href = '/login';
+      return;
+    }
+    
+    if (response.status === 404) {
+      // API not implemented yet - show mock data
+      displayMockData();
+      return;
+    }
+    
+    if (!response.ok) {
+      throw new Error('Failed to load audit logs');
+    }
+    
+    const data = await response.json();
+    
+    if (!data.logs || data.logs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No audit logs found</td></tr>';
+      return;
+    }
+    
+    tbody.innerHTML = data.logs.map(log => `
+      <tr>
+        <td class="timestamp">${formatTimestamp(log.timestamp)}</td>
+        <td>${log.admin_email}</td>
+        <td>${getActionBadge(log.action)}</td>
+        <td>${log.target_user_email || '—'}</td>
+        <td class="details">${log.details || '—'}</td>
+      </tr>
+    `).join('');
+    
+  } catch (error) {
+    console.error('Error loading audit logs:', error);
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">⚠️ Error loading audit logs. Backend API not yet implemented.</td></tr>';
+  }
+}
+
+// Display mock data (temporary until backend is ready)
+function displayMockData() {
+  const tbody = document.getElementById('auditTableBody');
+  const mockLogs = [
+    {
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      admin_email: 'admin@mindrobo.com',
+      action: 'pause_user',
+      target_user_email: 'john@example.com',
+      details: 'Paused user account for non-payment'
+    },
+    {
+      timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+      admin_email: 'admin@mindrobo.com',
+      action: 'convert_trial',
+      target_user_email: 'jane@example.com',
+      details: 'Converted to Pro plan'
+    },
+    {
+      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      admin_email: 'admin@mindrobo.com',
+      action: 'update_role',
+      target_user_email: 'bob@example.com',
+      details: 'Changed role from user to admin'
+    },
+    {
+      timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+      admin_email: 'admin@mindrobo.com',
+      action: 'extend_trial',
+      target_user_email: 'alice@example.com',
+      details: 'Extended trial by 7 days'
+    }
+  ];
+  
+  tbody.innerHTML = mockLogs.map(log => `
+    <tr>
+      <td class="timestamp">${formatTimestamp(log.timestamp)}</td>
+      <td>${log.admin_email}</td>
+      <td>${getActionBadge(log.action)}</td>
+      <td>${log.target_user_email}</td>
+      <td class="details">${log.details}</td>
+    </tr>
+  `).join('');
+  
+  // Add note about mock data
+  tbody.innerHTML += `
+    <tr>
+      <td colspan="5" style="text-align: center; padding: 20px; color: #f59e0b; background: rgba(245, 158, 11, 0.1);">
+        ⚠️ Showing mock data. Backend API (/api/v1/admin/audit) not yet implemented.
+      </td>
+    </tr>
+  `;
+}
+
+// Apply filters
+function applyFilters() {
+  const filters = {
+    action: document.getElementById('actionFilter').value,
+    start_date: document.getElementById('startDate').value,
+    end_date: document.getElementById('endDate').value
+  };
+  
+  loadAuditLogs(filters);
+}
+
+// Initialize
+window.addEventListener('DOMContentLoaded', () => {
+  loadAuditLogs();
+});
+</script>
+</body>
+</html>

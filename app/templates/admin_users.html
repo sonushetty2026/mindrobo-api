@@ -358,11 +358,12 @@
   <div class="header">
     <h1>👥 User Management</h1>
     <div class="nav-links">
-      <a href="/dashboard" class="nav-link">Dashboard</a>
-      <a href="/admin" class="nav-link">Admin</a>
+      <a href="/admin" class="nav-link">Dashboard</a>
       <a href="/admin/users" class="nav-link active">Users</a>
       <a href="/admin/trials" class="nav-link">Trials</a>
-      <a href="/logout" class="nav-link">Logout</a>
+      <a href="/admin/usage" class="nav-link">Usage</a>
+      <a href="/admin/audit" class="nav-link">Audit</a>
+      <a href="/admin/health-check" class="nav-link">Health</a>
     </div>
   </div>
 
@@ -382,6 +383,10 @@
       <option value="paused">Paused</option>
       <option value="trial">Trial</option>
     </select>
+    <div style="margin-left: auto; display: flex; gap: 8px;">
+      <button class="btn btn-primary" onclick="exportCSV()" title="Export to CSV">📥 CSV</button>
+      <button class="btn btn-primary" onclick="exportPDF()" title="Export to PDF">📄 PDF</button>
+    </div>
   </div>
 
   <div id="loading" class="loading">
@@ -622,6 +627,103 @@
   document.getElementById('search-input').addEventListener('input', renderUsers);
   document.getElementById('role-filter').addEventListener('change', renderUsers);
   document.getElementById('status-filter').addEventListener('change', renderUsers);
+
+  // Export to CSV
+  function exportCSV() {
+    const filteredUsers = getFilteredUsers();
+    
+    // CSV headers
+    let csv = 'Email,Full Name,Role,Status,Trial,Plan,Created At\n';
+    
+    // CSV rows
+    filteredUsers.forEach(user => {
+      csv += `"${user.email}","${user.full_name || ''}","${user.role}","${user.is_active ? 'Active' : 'Inactive'}","${user.is_trial ? 'Yes' : 'No'}","${user.plan_id || 'None'}","${new Date(user.created_at).toLocaleDateString()}"\n`;
+    });
+    
+    // Download
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `users_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  }
+  
+  // Export to PDF (simple text-based PDF)
+  function exportPDF() {
+    const filteredUsers = getFilteredUsers();
+    
+    // Create printable content
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+      <head>
+        <title>Users Report</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          h1 { color: #333; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background: #f2f2f2; font-weight: bold; }
+          .meta { color: #666; font-size: 0.9em; margin-bottom: 20px; }
+        </style>
+      </head>
+      <body>
+        <h1>MindRobo Users Report</h1>
+        <div class="meta">Generated on ${new Date().toLocaleString()}</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Full Name</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Trial</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredUsers.map(user => `
+              <tr>
+                <td>${user.email}</td>
+                <td>${user.full_name || '—'}</td>
+                <td>${user.role}</td>
+                <td>${user.is_active ? 'Active' : 'Inactive'}</td>
+                <td>${user.is_trial ? 'Yes' : 'No'}</td>
+                <td>${new Date(user.created_at).toLocaleDateString()}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <script>
+          window.onload = function() {
+            window.print();
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  }
+  
+  // Helper to get filtered users
+  function getFilteredUsers() {
+    const searchTerm = document.getElementById('search-input').value.toLowerCase();
+    const roleFilter = document.getElementById('role-filter').value;
+    const statusFilter = document.getElementById('status-filter').value;
+    
+    return users.filter(user => {
+      const matchesSearch = !searchTerm || user.email.toLowerCase().includes(searchTerm);
+      const matchesRole = !roleFilter || user.role === roleFilter;
+      const matchesStatus = !statusFilter || 
+        (statusFilter === 'active' && user.is_active) ||
+        (statusFilter === 'paused' && user.is_paused) ||
+        (statusFilter === 'trial' && user.is_trial);
+      
+      return matchesSearch && matchesRole && matchesStatus;
+    });
+  }
 
   loadUsers();
 </script>

@@ -5,16 +5,20 @@ All routes require superadmin role.
 
 import logging
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, or_
+from sqlalchemy import select, func, and_, or_, desc
 
 from app.core.database import get_db
-from app.core.dependencies import require_superadmin
+from app.core.dependencies import require_superadmin, require_support
+from app.core.auth import create_access_token
 from app.models.user import User
 from app.models.subscription_plan import SubscriptionPlan
+from app.models.admin_audit_log import AdminAuditLog
+from app.models.call import Call
+from app.models.business import Business
 from app.models.api_usage_log import APIUsageLog
 from app.schemas.admin import (
     AdminAnalytics,
@@ -32,9 +36,17 @@ from app.schemas.admin import (
     UserUsage,
     UserMargin,
     DailyCostTrend,
+    AuditLogEntry,
+    AuditLogList,
+    ImpersonationResponse,
+    HealthCheckResponse,
+    IntegrationStatus,
+    OnboardingFunnelResponse,
+    OnboardingStageCount,
 )
 from app.schemas.notification import BroadcastRequest
 from app.services.notification_service import create_notification
+from app.services.audit_service import log_admin_action
 from app.models.notification import NotificationType
 
 router = APIRouter()
@@ -282,6 +294,15 @@ async def pause_user(
     user.paused_at = datetime.utcnow()
     await db.commit()
     
+    # Audit log
+    await log_admin_action(
+        db=db,
+        admin_id=current_user.id,
+        action="user_pause",
+        target_user_id=user.id,
+        details={"user_email": user.email}
+    )
+    
     logger.info("Admin %s paused user %s", current_user.email, user.email)
     
     return MessageResponse(message=f"User {user.email} has been paused")
@@ -306,6 +327,15 @@ async def unpause_user(
     user.is_paused = False
     user.paused_at = None
     await db.commit()
+    
+    # Audit log
+    await log_admin_action(
+        db=db,
+        admin_id=current_user.id,
+        action="user_unpause",
+        target_user_id=user.id,
+        details={"user_email": user.email}
+    )
     
     logger.info("Admin %s unpaused user %s", current_user.email, user.email)
     
@@ -337,6 +367,15 @@ async def soft_delete_user(
     
     user.is_active = False
     await db.commit()
+    
+    # Audit log
+    await log_admin_action(
+        db=db,
+        admin_id=current_user.id,
+        action="user_delete",
+        target_user_id=user.id,
+        details={"user_email": user.email}
+    )
     
     logger.warning("Admin %s deactivated user %s", current_user.email, user.email)
     
@@ -502,6 +541,20 @@ async def extend_trial(
     await db.commit()
     
     action = "extended" if extend_data.days > 0 else "shortened"
+    
+    # Audit log
+    await log_admin_action(
+        db=db,
+        admin_id=current_user.id,
+        action="trial_extend" if extend_data.days > 0 else "trial_shorten",
+        target_user_id=user.id,
+        details={
+            "user_email": user.email,
+            "days": extend_data.days,
+            "new_trial_ends_at": user.trial_ends_at.isoformat()
+        }
+    )
+    
     logger.info("Admin %s %s trial for user %s by %d days", current_user.email, action, user.email, abs(extend_data.days))
     
     return MessageResponse(
@@ -554,6 +607,19 @@ async def convert_trial_to_paid(
     user.plan_id = convert_data.plan_id
     await db.commit()
     
+    # Audit log
+    await log_admin_action(
+        db=db,
+        admin_id=current_user.id,
+        action="trial_convert",
+        target_user_id=user.id,
+        details={
+            "user_email": user.email,
+            "plan_id": str(convert_data.plan_id),
+            "plan_name": plan.name
+        }
+    )
+    
     logger.info("Admin %s converted user %s to paid (plan: %s)", current_user.email, user.email, plan.name)
     
     return MessageResponse(
@@ -598,6 +664,20 @@ async def broadcast_notification(
             notification_type=broadcast_data.type,
         )
         count += 1
+    
+    # Audit log
+    await log_admin_action(
+        db=db,
+        admin_id=current_user.id,
+        action="broadcast_notification",
+        target_user_id=None,
+        details={
+            "title": broadcast_data.title,
+            "message": broadcast_data.message,
+            "target_role": broadcast_data.target_role,
+            "user_count": count
+        }
+    )
     
     logger.info(
         "Admin %s broadcast notification to %d users (role filter: %s)",
@@ -878,6 +958,364 @@ async def get_usage_trends(
         current += timedelta(days=1)
     
     return result
+
+
+# ============================================================================
+# ISSUE #94: AUDIT LOG
+# ============================================================================
+
+@router.get("/audit", response_model=AuditLogList)
+async def get_audit_logs(
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    action: Optional[str] = None,
+    admin_id: Optional[UUID] = None,
+    target_user_id: Optional[UUID] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    current_user: User = Depends(require_superadmin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get audit logs with pagination and filtering.
+    
+    Query params:
+    - limit: max results per page (default 50, max 500)
+    - offset: pagination offset
+    - action: filter by action type
+    - admin_id: filter by admin who performed the action
+    - target_user_id: filter by target user
+    - start_date: filter logs from this date onwards
+    - end_date: filter logs up to this date
+    """
+    # Build query with filters
+    query = select(AdminAuditLog)
+    filters = []
+    
+    if action:
+        filters.append(AdminAuditLog.action == action)
+    if admin_id:
+        filters.append(AdminAuditLog.admin_id == admin_id)
+    if target_user_id:
+        filters.append(AdminAuditLog.target_user_id == target_user_id)
+    if start_date:
+        filters.append(AdminAuditLog.created_at >= start_date)
+    if end_date:
+        filters.append(AdminAuditLog.created_at <= end_date)
+    
+    if filters:
+        query = query.where(and_(*filters))
+    
+    # Get total count
+    count_query = select(func.count(AdminAuditLog.id))
+    if filters:
+        count_query = count_query.where(and_(*filters))
+    
+    total_result = await db.execute(count_query)
+    total = total_result.scalar() or 0
+    
+    # Get paginated results
+    query = query.order_by(desc(AdminAuditLog.created_at)).limit(limit).offset(offset)
+    result = await db.execute(query)
+    logs = result.scalars().all()
+    
+    # Enrich with admin and target user emails
+    enriched_logs = []
+    for log in logs:
+        # Fetch admin user
+        admin_result = await db.execute(select(User).where(User.id == log.admin_id))
+        admin = admin_result.scalar_one_or_none()
+        
+        # Fetch target user if exists
+        target_email = None
+        if log.target_user_id:
+            target_result = await db.execute(select(User).where(User.id == log.target_user_id))
+            target = target_result.scalar_one_or_none()
+            if target:
+                target_email = target.email
+        
+        enriched_logs.append(AuditLogEntry(
+            id=log.id,
+            admin_id=log.admin_id,
+            action=log.action,
+            target_user_id=log.target_user_id,
+            details=log.details,
+            created_at=log.created_at,
+            admin_email=admin.email if admin else None,
+            target_email=target_email,
+        ))
+    
+    return AuditLogList(
+        logs=enriched_logs,
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
+
+
+# ============================================================================
+# ISSUE #95: USER IMPERSONATION
+# ============================================================================
+
+@router.get("/impersonate/{user_id}", response_model=ImpersonationResponse)
+async def impersonate_user(
+    user_id: UUID,
+    current_user: User = Depends(require_superadmin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Impersonate a user and get a temporary JWT.
+    
+    Returns a JWT token that represents the target user, but includes
+    `impersonated_by` claim to track that it's an admin viewing.
+    """
+    # Fetch target user
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Create impersonation token (valid for 1 hour)
+    token_data = {
+        "sub": str(user.id),
+        "email": user.email,
+        "impersonated_by": str(current_user.id),
+    }
+    access_token = create_access_token(token_data, expires_delta=timedelta(hours=1))
+    
+    # Log to audit trail
+    await log_admin_action(
+        db=db,
+        admin_id=current_user.id,
+        action="user_impersonate",
+        target_user_id=user.id,
+        details={"impersonated_email": user.email}
+    )
+    
+    logger.warning(
+        f"Admin {current_user.email} is impersonating user {user.email}"
+    )
+    
+    return ImpersonationResponse(
+        access_token=access_token,
+        impersonated_user_id=user.id,
+        impersonated_email=user.email,
+        expires_in=3600,
+    )
+
+
+# ============================================================================
+# ISSUE #96: INTEGRATION HEALTH PAGE
+# ============================================================================
+
+@router.get("/health", response_model=HealthCheckResponse)
+async def get_integration_health(
+    current_user: User = Depends(require_superadmin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Check health status of all integrations.
+    
+    Returns status for: Database, Retell API, Twilio, Stripe, SendGrid.
+    Status values: ok, not_configured, error
+    """
+    from app.core.config import settings
+    
+    # Check database
+    db_status = IntegrationStatus(status="ok")
+    try:
+        await db.execute(select(func.count(User.id)))
+    except Exception as e:
+        db_status = IntegrationStatus(status="error", message=str(e))
+    
+    # Check Retell API
+    retell_status = IntegrationStatus(status="not_configured")
+    if settings.RETELL_API_KEY:
+        try:
+            import httpx
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    "https://api.retellai.com/v2/list-agents",
+                    headers={"Authorization": f"Bearer {settings.RETELL_API_KEY}"},
+                    timeout=5.0
+                )
+                if response.status_code == 200:
+                    retell_status = IntegrationStatus(status="ok")
+                else:
+                    retell_status = IntegrationStatus(
+                        status="error", 
+                        message=f"HTTP {response.status_code}"
+                    )
+        except Exception as e:
+            retell_status = IntegrationStatus(status="error", message=str(e))
+    
+    # Check Twilio
+    twilio_status = IntegrationStatus(status="not_configured")
+    if settings.TWILIO_ACCOUNT_SID and settings.TWILIO_AUTH_TOKEN:
+        try:
+            import httpx
+            from httpx import BasicAuth
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"https://api.twilio.com/2010-04-01/Accounts/{settings.TWILIO_ACCOUNT_SID}.json",
+                    auth=BasicAuth(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN),
+                    timeout=5.0
+                )
+                if response.status_code == 200:
+                    twilio_status = IntegrationStatus(status="ok")
+                else:
+                    twilio_status = IntegrationStatus(
+                        status="error", 
+                        message=f"HTTP {response.status_code}"
+                    )
+        except Exception as e:
+            twilio_status = IntegrationStatus(status="error", message=str(e))
+    
+    # Check Stripe
+    stripe_status = IntegrationStatus(status="not_configured")
+    if settings.STRIPE_API_KEY:
+        try:
+            import httpx
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    "https://api.stripe.com/v1/balance",
+                    headers={"Authorization": f"Bearer {settings.STRIPE_API_KEY}"},
+                    timeout=5.0
+                )
+                if response.status_code == 200:
+                    stripe_status = IntegrationStatus(status="ok")
+                else:
+                    stripe_status = IntegrationStatus(
+                        status="error", 
+                        message=f"HTTP {response.status_code}"
+                    )
+        except Exception as e:
+            stripe_status = IntegrationStatus(status="error", message=str(e))
+    
+    # Check SendGrid
+    sendgrid_status = IntegrationStatus(status="not_configured")
+    if settings.SENDGRID_API_KEY:
+        try:
+            import httpx
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    "https://api.sendgrid.com/v3/user/profile",
+                    headers={"Authorization": f"Bearer {settings.SENDGRID_API_KEY}"},
+                    timeout=5.0
+                )
+                if response.status_code == 200:
+                    sendgrid_status = IntegrationStatus(status="ok")
+                else:
+                    sendgrid_status = IntegrationStatus(
+                        status="error", 
+                        message=f"HTTP {response.status_code}"
+                    )
+        except Exception as e:
+            sendgrid_status = IntegrationStatus(status="error", message=str(e))
+    
+    return HealthCheckResponse(
+        db=db_status,
+        retell=retell_status,
+        twilio=twilio_status,
+        stripe=stripe_status,
+        sendgrid=sendgrid_status,
+    )
+
+
+# ============================================================================
+# ISSUE #97: ONBOARDING COMPLETION TRACKING & ANALYTICS FUNNEL
+# ============================================================================
+
+@router.get("/analytics/funnel", response_model=OnboardingFunnelResponse)
+async def get_onboarding_funnel(
+    current_user: User = Depends(require_superadmin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get onboarding funnel analytics.
+    
+    Tracks stages:
+    - signed_up: user created
+    - email_verified: is_verified=True
+    - onboarding_started: business.onboarding_completed is not None
+    - personality_set: business.assistant_personality is not None
+    - phone_configured: business.twilio_phone_number is not None
+    - first_call_received: has at least one call record
+    
+    Returns counts per stage and drop-off percentages.
+    """
+    # Stage 1: Signed up (all users)
+    signed_up_result = await db.execute(select(func.count(User.id)))
+    signed_up = signed_up_result.scalar() or 0
+    
+    # Stage 2: Email verified
+    email_verified_result = await db.execute(
+        select(func.count(User.id)).where(User.is_verified == True)
+    )
+    email_verified = email_verified_result.scalar() or 0
+    
+    # Stage 3: Onboarding started (has business with onboarding completed or personality set)
+    # We'll use: user has a business record
+    onboarding_started_result = await db.execute(
+        select(func.count(User.id)).join(Business, User.business_id == Business.id)
+    )
+    onboarding_started = onboarding_started_result.scalar() or 0
+    
+    # Stage 4: Personality set (business has assistant_personality)
+    personality_set_result = await db.execute(
+        select(func.count(User.id)).join(Business, User.business_id == Business.id)
+        .where(Business.assistant_personality.isnot(None))
+    )
+    personality_set = personality_set_result.scalar() or 0
+    
+    # Stage 5: Phone configured (business has twilio_phone_number)
+    phone_configured_result = await db.execute(
+        select(func.count(User.id)).join(Business, User.business_id == Business.id)
+        .where(Business.twilio_phone_number.isnot(None))
+    )
+    phone_configured = phone_configured_result.scalar() or 0
+    
+    # Stage 6: First call received (user's business has at least one call)
+    first_call_result = await db.execute(
+        select(func.count(func.distinct(Call.business_id)))
+    )
+    first_call_received = first_call_result.scalar() or 0
+    
+    # Calculate drop-off percentages
+    stages = [
+        OnboardingStageCount(stage="signed_up", count=signed_up, drop_off_percent=0.0),
+        OnboardingStageCount(
+            stage="email_verified", 
+            count=email_verified, 
+            drop_off_percent=round((1 - email_verified / signed_up) * 100, 2) if signed_up > 0 else 0.0
+        ),
+        OnboardingStageCount(
+            stage="onboarding_started", 
+            count=onboarding_started, 
+            drop_off_percent=round((1 - onboarding_started / email_verified) * 100, 2) if email_verified > 0 else 0.0
+        ),
+        OnboardingStageCount(
+            stage="personality_set", 
+            count=personality_set, 
+            drop_off_percent=round((1 - personality_set / onboarding_started) * 100, 2) if onboarding_started > 0 else 0.0
+        ),
+        OnboardingStageCount(
+            stage="phone_configured", 
+            count=phone_configured, 
+            drop_off_percent=round((1 - phone_configured / personality_set) * 100, 2) if personality_set > 0 else 0.0
+        ),
+        OnboardingStageCount(
+            stage="first_call_received", 
+            count=first_call_received, 
+            drop_off_percent=round((1 - first_call_received / phone_configured) * 100, 2) if phone_configured > 0 else 0.0
+        ),
+    ]
+    
+    # Overall completion rate (first_call_received / signed_up)
+    overall_completion = (first_call_received / signed_up * 100) if signed_up > 0 else 0.0
+    
+    return OnboardingFunnelResponse(
+        stages=stages,
+        total_signups=signed_up,
+        overall_completion_rate=round(overall_completion, 2),
+    )
 
 
 # ============================================================================

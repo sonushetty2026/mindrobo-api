@@ -155,6 +155,36 @@ async def admin_trials_page():
     return load_template("admin_trials.html")
 
 
+@app.get("/admin/usage", response_class=HTMLResponse)
+async def admin_usage_page():
+    """Serve the admin usage dashboard page."""
+    return load_template("admin_usage.html")
+
+
+@app.get("/admin/audit", response_class=HTMLResponse)
+async def admin_audit_page():
+    """Serve the admin audit log page."""
+    return load_template("admin_audit.html")
+
+
+@app.get("/admin/health-check", response_class=HTMLResponse)
+async def admin_health_page():
+    """Serve the admin integration health check page."""
+    return load_template("admin_health.html")
+
+
+@app.get("/admin/email-templates", response_class=HTMLResponse)
+async def admin_email_templates_page():
+    """Serve the admin email templates customization page."""
+    return load_template("admin_email_templates.html")
+
+
+@app.get("/account/sessions", response_class=HTMLResponse)
+async def account_sessions_page():
+    """Serve the user session management page."""
+    return load_template("account_sessions.html")
+
+
 @app.get("/notifications", response_class=HTMLResponse)
 async def notifications_page():
     """Serve the notifications center page."""
