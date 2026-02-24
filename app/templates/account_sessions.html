@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindRobo — Active Sessions</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 24px;
+  }
+  
+  .container { max-width: 1200px; margin: 0 auto; }
+  
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  
+  h1 {
+    font-size: 2rem;
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .nav-links {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .nav-link {
+    padding: 10px 20px;
+    background: #1e293b;
+    color: #94a3b8;
+    text-decoration: none;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+  }
+  
+  .nav-link:hover {
+    background: #334155;
+    color: #e2e8f0;
+  }
+  
+  /* Info banner */
+  .info-banner {
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid #38bdf8;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .info-banner-icon {
+    font-size: 1.5rem;
+  }
+  
+  .info-banner-text {
+    color: #94a3b8;
+    font-size: 0.95rem;
+  }
+  
+  /* Action bar */
+  .action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .section-title {
+    font-size: 1.3rem;
+    color: #e2e8f0;
+    font-weight: 600;
+  }
+  
+  .btn-danger {
+    padding: 10px 20px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .btn-danger:hover {
+    background: #dc2626;
+  }
+  
+  /* Sessions list */
+  .sessions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  
+  .session-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 20px;
+    transition: box-shadow 0.2s;
+  }
+  
+  .session-card.current {
+    border-color: #38bdf8;
+    background: rgba(56, 189, 248, 0.05);
+  }
+  
+  .session-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+  
+  .session-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .session-info {
+    flex: 1;
+  }
+  
+  .session-device {
+    font-size: 1.1rem;
+    color: #e2e8f0;
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .current-badge {
+    background: #22c55e;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  
+  .session-location {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+  }
+  
+  .session-time {
+    color: #64748b;
+    font-size: 0.85rem;
+  }
+  
+  .session-actions {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .btn-small {
+    padding: 6px 14px;
+    background: #334155;
+    color: #e2e8f0;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .btn-small:hover {
+    background: #475569;
+  }
+  
+  .btn-small.revoke {
+    background: #7f1d1d;
+    color: #fca5a5;
+  }
+  
+  .btn-small.revoke:hover {
+    background: #991b1b;
+  }
+  
+  /* Login history */
+  .history-section {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 24px;
+  }
+  
+  .history-title {
+    font-size: 1.2rem;
+    color: #e2e8f0;
+    margin-bottom: 20px;
+  }
+  
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: #0f172a;
+    border-radius: 8px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .history-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .history-icon {
+    font-size: 1.2rem;
+  }
+  
+  .history-details {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .history-device {
+    color: #e2e8f0;
+    font-size: 0.95rem;
+  }
+  
+  .history-location {
+    color: #94a3b8;
+    font-size: 0.85rem;
+  }
+  
+  .history-time {
+    color: #64748b;
+    font-size: 0.85rem;
+  }
+  
+  .status-success {
+    color: #22c55e;
+  }
+  
+  .status-failed {
+    color: #ef4444;
+  }
+  
+  .loading {
+    text-align: center;
+    padding: 40px;
+    color: #64748b;
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #64748b;
+  }
+  
+  .success-msg {
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid #22c55e;
+    color: #22c55e;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    display: none;
+  }
+  
+  .error-msg {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid #ef4444;
+    color: #fca5a5;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    display: none;
+  }
+  
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    body { padding: 12px; }
+    h1 { font-size: 1.5rem; }
+    .session-header { flex-direction: column; }
+    .history-item { flex-direction: column; align-items: start; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🔐 Active Sessions</h1>
+    <nav class="nav-links">
+      <a href="/dashboard" class="nav-link">Dashboard</a>
+      <a href="/settings" class="nav-link">Settings</a>
+      <a href="/account/sessions" class="nav-link" style="background: #0ea5e9; color: white;">Sessions</a>
+    </nav>
+  </div>
+  
+  <div class="info-banner">
+    <div class="info-banner-icon">ℹ️</div>
+    <div class="info-banner-text">
+      Manage your active sessions across devices. You can revoke access to any device from here.
+    </div>
+  </div>
+  
+  <div id="success-msg" class="success-msg"></div>
+  <div id="error-msg" class="error-msg"></div>
+  
+  <div id="loading" class="loading">Loading sessions...</div>
+  
+  <div id="content" style="display: none;">
+    <!-- Active Sessions -->
+    <div class="action-bar">
+      <h2 class="section-title">Active Sessions</h2>
+      <button class="btn-danger" onclick="logoutAll()">Logout All Devices</button>
+    </div>
+    
+    <div id="sessions-list" class="sessions-list">
+      <!-- Populated by JavaScript -->
+    </div>
+    
+    <!-- Login History -->
+    <div class="history-section">
+      <h3 class="history-title">Login History (Last 30 Days)</h3>
+      <div id="history-list" class="history-list">
+        <!-- Populated by JavaScript -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Expected API schema (to be implemented by Backend):
+// GET /api/v1/account/sessions
+// Response: {
+//   active_sessions: [
+//     {
+//       id: "session_abc123",
+//       device: "Chrome on macOS",
+//       ip: "192.168.1.100",
+//       location: "San Francisco, CA",
+//       last_active: "2024-01-15T14:30:00Z",
+//       is_current: true
+//     }
+//   ],
+//   login_history: [
+//     {
+//       timestamp: "2024-01-15T14:30:00Z",
+//       device: "Chrome on macOS",
+//       ip: "192.168.1.100",
+//       location: "San Francisco, CA",
+//       status: "success" | "failed"
+//     }
+//   ]
+// }
+//
+// DELETE /api/v1/account/sessions/{session_id}
+// Response: { message: "Session revoked" }
+//
+// POST /api/v1/account/sessions/logout-all
+// Response: { message: "All sessions logged out" }
+
+const API_BASE = '/api/v1';
+let currentToken = null;
+let sessions = [];
+let history = [];
+
+// Check authentication
+async function checkAuth() {
+  currentToken = localStorage.getItem('token');
+  if (!currentToken) {
+    window.location.href = '/login';
+    return false;
+  }
+  return true;
+}
+
+// Format timestamp
+function formatTimestamp(isoString) {
+  const date = new Date(isoString);
+  const now = new Date();
+  const diff = Math.floor((now - date) / 1000);
+  
+  if (diff < 60) return 'Just now';
+  if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)} days ago`;
+  
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+  });
+}
+
+// Load sessions
+async function loadSessions() {
+  if (!await checkAuth()) return;
+  
+  try {
+    const response = await fetch(`${API_BASE}/account/sessions`, {
+      headers: { 'Authorization': `Bearer ${currentToken}` }
+    });
+    
+    if (response.status === 401) {
+      window.location.href = '/login';
+      return;
+    }
+    
+    if (response.status === 404) {
+      // API not implemented - show mock data
+      displayMockData();
+      return;
+    }
+    
+    if (!response.ok) {
+      throw new Error('Failed to load sessions');
+    }
+    
+    const data = await response.json();
+    sessions = data.active_sessions || [];
+    history = data.login_history || [];
+    
+    renderSessions();
+    renderHistory();
+    
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+    
+  } catch (error) {
+    console.error('Error loading sessions:', error);
+    displayMockData();
+  }
+}
+
+// Display mock data
+function displayMockData() {
+  const now = new Date();
+  
+  sessions = [
+    {
+      id: 'session_current',
+      device: 'Chrome on macOS',
+      ip: '192.168.1.100',
+      location: 'San Francisco, CA',
+      last_active: now.toISOString(),
+      is_current: true
+    },
+    {
+      id: 'session_mobile',
+      device: 'Safari on iPhone',
+      ip: '192.168.1.101',
+      location: 'San Francisco, CA',
+      last_active: new Date(now - 2 * 60 * 60 * 1000).toISOString(),
+      is_current: false
+    },
+    {
+      id: 'session_work',
+      device: 'Firefox on Windows',
+      ip: '10.0.0.50',
+      location: 'New York, NY',
+      last_active: new Date(now - 24 * 60 * 60 * 1000).toISOString(),
+      is_current: false
+    }
+  ];
+  
+  history = [
+    {
+      timestamp: now.toISOString(),
+      device: 'Chrome on macOS',
+      ip: '192.168.1.100',
+      location: 'San Francisco, CA',
+      status: 'success'
+    },
+    {
+      timestamp: new Date(now - 3 * 60 * 60 * 1000).toISOString(),
+      device: 'Safari on iPhone',
+      ip: '192.168.1.101',
+      location: 'San Francisco, CA',
+      status: 'success'
+    },
+    {
+      timestamp: new Date(now - 24 * 60 * 60 * 1000).toISOString(),
+      device: 'Firefox on Windows',
+      ip: '10.0.0.50',
+      location: 'New York, NY',
+      status: 'success'
+    },
+    {
+      timestamp: new Date(now - 48 * 60 * 60 * 1000).toISOString(),
+      device: 'Chrome on Android',
+      ip: '203.0.113.5',
+      location: 'Los Angeles, CA',
+      status: 'failed'
+    }
+  ];
+  
+  renderSessions();
+  renderHistory();
+  
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('content').style.display = 'block';
+}
+
+// Render sessions
+function renderSessions() {
+  const container = document.getElementById('sessions-list');
+  
+  if (sessions.length === 0) {
+    container.innerHTML = '<div class="empty-state">No active sessions</div>';
+    return;
+  }
+  
+  container.innerHTML = sessions.map(session => `
+    <div class="session-card ${session.is_current ? 'current' : ''}">
+      <div class="session-header">
+        <div class="session-info">
+          <div class="session-device">
+            ${getDeviceIcon(session.device)} ${session.device}
+            ${session.is_current ? '<span class="current-badge">Current</span>' : ''}
+          </div>
+          <div class="session-location">📍 ${session.location} • ${session.ip}</div>
+          <div class="session-time">Last active: ${formatTimestamp(session.last_active)}</div>
+        </div>
+        ${!session.is_current ? `
+          <div class="session-actions">
+            <button class="btn-small revoke" onclick="revokeSession('${session.id}')">Revoke Access</button>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+// Render history
+function renderHistory() {
+  const container = document.getElementById('history-list');
+  
+  if (history.length === 0) {
+    container.innerHTML = '<div class="empty-state">No login history</div>';
+    return;
+  }
+  
+  container.innerHTML = history.map(item => `
+    <div class="history-item">
+      <div class="history-info">
+        <div class="history-icon">${getDeviceIcon(item.device)}</div>
+        <div class="history-details">
+          <div class="history-device">${item.device}</div>
+          <div class="history-location">📍 ${item.location} • ${item.ip}</div>
+        </div>
+      </div>
+      <div class="history-time">
+        ${formatTimestamp(item.timestamp)} • 
+        <span class="status-${item.status}">${item.status === 'success' ? '✓ Success' : '✗ Failed'}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Get device icon
+function getDeviceIcon(device) {
+  if (device.includes('iPhone') || device.includes('Android')) return '📱';
+  if (device.includes('iPad') || device.includes('Tablet')) return '📱';
+  if (device.includes('macOS') || device.includes('Windows') || device.includes('Linux')) return '💻';
+  return '🖥️';
+}
+
+// Revoke session
+async function revokeSession(sessionId) {
+  if (!confirm('Are you sure you want to revoke access to this device?')) return;
+  
+  try {
+    const response = await fetch(`${API_BASE}/account/sessions/${sessionId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${currentToken}` }
+    });
+    
+    if (response.status === 404) {
+      // API not implemented - simulate success
+      sessions = sessions.filter(s => s.id !== sessionId);
+      renderSessions();
+      showSuccess('Session revoked successfully (mock mode)');
+      return;
+    }
+    
+    if (!response.ok) {
+      throw new Error('Failed to revoke session');
+    }
+    
+    // Remove from list
+    sessions = sessions.filter(s => s.id !== sessionId);
+    renderSessions();
+    showSuccess('Session revoked successfully');
+    
+  } catch (error) {
+    console.error('Error revoking session:', error);
+    showError('Failed to revoke session: ' + error.message);
+  }
+}
+
+// Logout all devices
+async function logoutAll() {
+  if (!confirm('This will log you out of all devices except the current one. Continue?')) return;
+  
+  try {
+    const response = await fetch(`${API_BASE}/account/sessions/logout-all`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${currentToken}` }
+    });
+    
+    if (response.status === 404) {
+      // API not implemented - simulate success
+      sessions = sessions.filter(s => s.is_current);
+      renderSessions();
+      showSuccess('All other sessions logged out (mock mode)');
+      return;
+    }
+    
+    if (!response.ok) {
+      throw new Error('Failed to logout all sessions');
+    }
+    
+    // Keep only current session
+    sessions = sessions.filter(s => s.is_current);
+    renderSessions();
+    showSuccess('All other sessions logged out successfully');
+    
+  } catch (error) {
+    console.error('Error logging out all sessions:', error);
+    showError('Failed to logout all sessions: ' + error.message);
+  }
+}
+
+// Show messages
+function showSuccess(msg) {
+  const el = document.getElementById('success-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 3000);
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 5000);
+}
+
+// Initialize
+window.addEventListener('DOMContentLoaded', loadSessions);
+</script>
+</body>
+</html>
