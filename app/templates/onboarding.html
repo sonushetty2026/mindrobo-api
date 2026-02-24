@@ -640,7 +640,26 @@
     ownerName: '',
     leadHandling: 'appointment'
   };
-  const businessId = new URLSearchParams(window.location.search).get('business_id') || '00000000-0000-0000-0000-000000000001';
+  const businessId = new URLSearchParams(window.location.search).get('business_id')
+    || localStorage.getItem('business_id')
+    || '00000000-0000-0000-0000-000000000001';
+  const jwtToken = localStorage.getItem('jwt_token');
+
+  // If no business_id and no JWT, redirect to login
+  if (businessId === '00000000-0000-0000-0000-000000000001' && !jwtToken) {
+    window.location.href = '/login';
+  }
+
+  // If we have JWT but no business_id, try to get it from the JWT payload
+  if (businessId === '00000000-0000-0000-0000-000000000001' && jwtToken) {
+    try {
+      const payload = JSON.parse(atob(jwtToken.split('.')[1]));
+      if (payload.business_id) {
+        localStorage.setItem('business_id', payload.business_id);
+        window.location.reload();
+      }
+    } catch(e) { console.error('Failed to decode JWT:', e); }
+  }
   
   // Elements
   const steps = [1, 2, 3, 4];
@@ -713,8 +732,11 @@
         const formData = new FormData();
         formData.append('pdf_file', file);
         formData.append('business_id', businessId);
+        const pdfHeaders = {};
+        if (jwtToken) pdfHeaders['Authorization'] = 'Bearer ' + jwtToken;
         response = await fetch('/api/v1/ingest/preview', {
           method: 'POST',
+          headers: pdfHeaders,
           body: formData,
         });
         sourceInfo = { type: 'pdf', value: file.name };
@@ -723,8 +745,11 @@
         const formData = new FormData();
         formData.append('url', url);
         formData.append('business_id', businessId);
+        const headers = {};
+        if (jwtToken) headers['Authorization'] = 'Bearer ' + jwtToken;
         response = await fetch('/api/v1/ingest/preview', {
           method: 'POST',
+          headers: headers,
           body: formData,
         });
         sourceInfo = { type: 'url', value: url };
@@ -835,9 +860,11 @@
     
     try {
       // POST to backend API
+      const persHeaders = { 'Content-Type': 'application/json' };
+      if (jwtToken) persHeaders['Authorization'] = 'Bearer ' + jwtToken;
       const response = await fetch(`/api/v1/businesses/${businessId}/personality`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: persHeaders,
         body: JSON.stringify(personalityData),
       });
       

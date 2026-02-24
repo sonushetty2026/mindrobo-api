@@ -92,24 +92,36 @@ async def health():
     return {"status": "ok", "service": "mindrobo-api", "version": "0.1.0"}
 
 
-@app.get("/dashboard")
-async def dashboard_redirect():
-    return RedirectResponse(url="/api/v1/dashboard/")
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard_page():
+    template = TEMPLATES_DIR / "dashboard.html"
+    if template.exists():
+        return HTMLResponse(content=template.read_text())
+    return HTMLResponse(content="<h1>Dashboard template not found</h1>", status_code=500)
 
 
-@app.get("/onboarding")
-async def onboarding_redirect():
-    return RedirectResponse(url="/api/v1/onboarding/")
+@app.get("/onboarding", response_class=HTMLResponse)
+async def onboarding_page():
+    template = TEMPLATES_DIR / "onboarding.html"
+    if template.exists():
+        return HTMLResponse(content=template.read_text())
+    return HTMLResponse(content="<h1>Onboarding template not found</h1>", status_code=500)
 
 
-@app.get("/analytics")
-async def analytics_redirect():
-    return RedirectResponse(url="/api/v1/analytics/")
+@app.get("/analytics", response_class=HTMLResponse)
+async def analytics_page():
+    template = TEMPLATES_DIR / "analytics.html"
+    if template.exists():
+        return HTMLResponse(content=template.read_text())
+    return HTMLResponse(content="<h1>Analytics template not found</h1>", status_code=500)
 
 
-@app.get("/warroom")
-async def warroom_redirect():
-    return RedirectResponse(url="/api/v1/warroom/")
+@app.get("/warroom", response_class=HTMLResponse)
+async def warroom_page():
+    template = TEMPLATES_DIR / "warroom.html"
+    if template.exists():
+        return HTMLResponse(content=template.read_text())
+    return HTMLResponse(content="<h1>War Room template not found</h1>", status_code=500)
 
 
 @app.get("/leads", response_class=HTMLResponse)

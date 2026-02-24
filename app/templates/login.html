@@ -338,6 +338,12 @@ form.addEventListener('submit', async (e) => {
     // Store JWT token
     if (data.access_token) {
       localStorage.setItem('jwt_token', data.access_token);
+      if (data.business_id) {
+        localStorage.setItem('business_id', data.business_id);
+      }
+      if (data.user_id) {
+        localStorage.setItem('user_id', data.user_id);
+      }
       // Redirect to dashboard
       window.location.href = '/dashboard';
     } else {

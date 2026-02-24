@@ -21,7 +21,7 @@ class Notification(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     title = Column(String, nullable=False)
     message = Column(Text, nullable=False)
-    type = Column(Enum(NotificationType, name="notification_type"), nullable=False)
+    type = Column(Enum(NotificationType, name="notification_type", values_callable=lambda obj: [e.value for e in obj]), nullable=False)
     is_read = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, nullable=False, server_default=func.now())
 

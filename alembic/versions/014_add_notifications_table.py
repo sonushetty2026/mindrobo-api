@@ -31,7 +31,7 @@ def upgrade() -> None:
         sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('title', sa.String(), nullable=False),
         sa.Column('message', sa.Text(), nullable=False),
-        sa.Column('type', sa.Enum('system', 'admin', 'trial', 'billing', name='notification_type'), nullable=False),
+        sa.Column('type', postgresql.ENUM('system', 'admin', 'trial', 'billing', name='notification_type', create_type=False), nullable=False),
         sa.Column('is_read', sa.Boolean(), nullable=False, server_default='false'),
         sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
     )

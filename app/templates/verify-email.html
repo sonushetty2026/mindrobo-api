@@ -140,7 +140,7 @@
     <div id="success-state" style="display: none;">
       <div class="icon">✅</div>
       <h1 class="title">Email Verified!</h1>
-      <p class="message">Your email has been successfully verified. You'll be redirected to onboarding in a moment...</p>
+      <p class="message">Your email has been successfully verified. You'll be redirected to login in a moment...</p>
     </div>
     
     <div id="error-state" style="display: none;">
@@ -187,7 +187,7 @@ async function verifyEmail() {
     
     // Redirect to onboarding after 3 seconds
     setTimeout(() => {
-      window.location.href = '/onboarding';
+      window.location.href = '/login';
     }, 3000);
     
   } catch (error) {

@@ -84,13 +84,47 @@ async def register(user_data: UserRegister, db: AsyncSession = Depends(get_db)):
     # Create welcome notification
     await create_welcome_notification(db, user.id)
     
-    # TODO: Send email via SendGrid (stubbed for now)
+    # Send verification email via SendGrid
     logger.info(
         "🔐 VERIFICATION TOKEN for %s: %s (expires: %s)",
         user.email,
         verification_token,
         verification_expires,
     )
+
+    # Build verification URL
+    verify_url = f"http://52.159.104.87:8000/verify-email?token={verification_token}"
+    try:
+        await email_service.send_email(
+            to=user.email,
+            subject="Verify your MindRobo account",
+            html_body=f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <h2 style="color: #4A90E2;">Welcome to MindRobo!</h2>
+                        <p>Hi {user.full_name or user.email},</p>
+                        <p>Thank you for signing up! Please verify your email to get started.</p>
+                        <p>
+                            <a href="{verify_url}"
+                               style="display: inline-block; padding: 12px 24px; background-color: #4A90E2;
+                                      color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
+                                Verify My Email
+                            </a>
+                        </p>
+                        <p style="color: #666; font-size: 14px;">Or copy and paste this link: {verify_url}</p>
+                        <p style="color: #666; font-size: 14px; margin-top: 40px;">
+                            This link expires in 24 hours.<br>
+                            If you didn't create this account, you can safely ignore this email.
+                        </p>
+                    </div>
+                </body>
+            </html>
+            """,
+            plain_body=f"Welcome to MindRobo!\n\nVerify your email: {verify_url}\n\nThis link expires in 24 hours.",
+        )
+    except Exception as e:
+        logger.error("Failed to send verification email to %s: %s", user.email, e)
     
     logger.info("User registered (unverified): %s", user.email)
     

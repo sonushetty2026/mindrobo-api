@@ -24,7 +24,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 # Load analytics template
-TEMPLATES_DIR = Path(__file__).parent.parent.parent.parent / "app" / "templates"
+TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent.parent / "templates"
 ANALYTICS_TEMPLATE_PATH = TEMPLATES_DIR / "analytics.html"
 
 

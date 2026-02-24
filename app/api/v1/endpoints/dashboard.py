@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 _connections: Set[WebSocket] = set()
 
 # Load dashboard template
-TEMPLATES_DIR = Path(__file__).parent.parent.parent.parent / "app" / "templates"
+TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent.parent / "templates"
 DASHBOARD_TEMPLATE_PATH = TEMPLATES_DIR / "dashboard.html"
 
 
