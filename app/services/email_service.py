@@ -3,6 +3,8 @@
 import os
 import logging
 from typing import Optional
+from uuid import UUID
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +16,8 @@ try:
 except ImportError:
     SENDGRID_AVAILABLE = False
     logger.warning("SendGrid not installed. Email notifications will be disabled.")
+
+from app.utils.usage_tracker import log_api_usage
 
 
 class EmailService:
@@ -42,6 +46,8 @@ class EmailService:
         subject: str,
         html_body: str,
         plain_body: Optional[str] = None,
+        db: AsyncSession | None = None,
+        user_id: UUID | None = None,
     ) -> bool:
         """
         Send an email.
@@ -51,6 +57,8 @@ class EmailService:
             subject: Email subject
             html_body: HTML body content
             plain_body: Plain text body (optional)
+            db: Optional database session for usage logging
+            user_id: Optional user ID for usage logging
         
         Returns:
             True if sent successfully, False otherwise
@@ -74,6 +82,18 @@ class EmailService:
             
             if response.status_code >= 200 and response.status_code < 300:
                 logger.info(f"Email sent successfully to {to}: {subject}")
+                
+                # Log API usage ($0.001 per email)
+                if db and user_id:
+                    await log_api_usage(
+                        db=db,
+                        user_id=user_id,
+                        service="sendgrid",
+                        endpoint="email",
+                        cost_cents=0,  # Less than 1 cent, so we'll track as 0
+                        request_data={"to": to, "subject": subject}
+                    )
+                
                 return True
             else:
                 logger.error(f"Failed to send email to {to}: {response.status_code} {response.body}")
@@ -159,6 +179,8 @@ class EmailService:
         lead_name: str,
         lead_phone: str,
         service_needed: Optional[str] = None,
+        db: AsyncSession | None = None,
+        user_id: UUID | None = None,
     ) -> bool:
         """
         Send lead notification to business owner.
@@ -221,7 +243,7 @@ class EmailService:
         This lead was automatically captured by your MindRobo AI assistant.
         """
         
-        return await self.send_email(owner_email, subject, html_body, plain_body)
+        return await self.send_email(owner_email, subject, html_body, plain_body, db, user_id)
     
     async def send_appointment_confirmation(
         self,

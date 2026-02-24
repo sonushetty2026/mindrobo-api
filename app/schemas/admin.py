@@ -104,46 +104,52 @@ class AdminTrialConvert(BaseModel):
     plan_id: UUID = Field(description="Subscription plan ID to assign")
 
 
-# API Usage tracking schemas (Issues #92, #93)
+# API Usage tracking schemas (Issue #92, #93)
+class ServiceBreakdown(BaseModel):
+    """Cost breakdown by service."""
+    service: str
+    total_cost_cents: int
+    call_count: int
+
+
 class UsageSummary(BaseModel):
-    """Platform-wide API usage summary."""
-    total_spend: int = Field(description="Total platform spend in cents")
-    retell_cost: int = Field(description="Retell API cost in cents")
-    twilio_cost: int = Field(description="Twilio API cost in cents")
-    sendgrid_cost: int = Field(description="SendGrid API cost in cents")
+    """Platform-wide usage summary."""
+    total_cost_cents: int
+    service_breakdown: List[ServiceBreakdown]
+    period_start: Optional[datetime] = None
+    period_end: Optional[datetime] = None
 
 
 class UserUsage(BaseModel):
     """Per-user usage breakdown."""
-    user_email: str
-    user_id: str
-    total_cost: int = Field(description="Total cost in cents")
-    retell_cost: int = Field(description="Retell cost in cents")
-    twilio_cost: int = Field(description="Twilio cost in cents")
-    sendgrid_cost: int = Field(description="SendGrid cost in cents")
+    user_id: UUID
+    email: str
+    full_name: Optional[str]
+    total_cost_cents: int
+    service_breakdown: List[ServiceBreakdown]
 
 
 class UserMargin(BaseModel):
     """Per-user margin analysis."""
-    user_email: str
-    user_id: str
-    plan_price: int = Field(description="Monthly plan price in cents")
-    total_cost: int = Field(description="Total API cost in cents")
-    margin: int = Field(description="Profit margin in cents")
-    margin_percent: float = Field(description="Margin as percentage")
-    alert: bool = Field(description="True if cost exceeds plan price")
+    user_id: UUID
+    email: str
+    full_name: Optional[str]
+    plan_price_cents: int
+    total_cost_cents: int
+    margin_cents: int = Field(description="plan_price - total_cost")
+    margin_percentage: float
+    is_profitable: bool
+    period_start: datetime
+    period_end: datetime
 
 
 class DailyCostTrend(BaseModel):
-    """Daily cost trend data point."""
-    date: str = Field(description="Date in YYYY-MM-DD format")
-    total_cost: int = Field(description="Total cost for that day in cents")
-
-
-class UsageTrends(BaseModel):
-    """Cost trends over time."""
-    days: int = Field(description="Number of days of data")
-    trends: List[DailyCostTrend]
+    """Daily cost data for charts."""
+    date: str  # YYYY-MM-DD
+    total_cost_cents: int
+    retell_cost_cents: int
+    twilio_cost_cents: int
+    sendgrid_cost_cents: int
 
 
 # Audit Log schemas (Issue #94)
