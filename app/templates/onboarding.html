@@ -465,6 +465,7 @@
     </div>
     
     <div class="button-group">
+      <button class="btn btn-secondary" id="back-to-dashboard">← Back to Dashboard</button>
       <button class="btn btn-primary" id="extract-btn">
         Extract Knowledge
         <span class="spinner" style="display: none;" id="extract-spinner"></span>
@@ -656,6 +657,7 @@
   const chunksContainer = document.getElementById('chunks-container');
   const selectedCountEl = document.getElementById('selected-count');
   const continueToPublishBtn = document.getElementById('continue-to-publish');
+  const backToDashboardBtn = document.getElementById('back-to-dashboard');
   const backToIngestBtn = document.getElementById('back-to-ingest');
   const backToPersonalityBtn = document.getElementById('back-to-personality');
   const backToReviewBtn = document.getElementById('back-to-review');
@@ -881,6 +883,7 @@
   }
   
   // Navigation
+  backToDashboardBtn.addEventListener('click', () => window.location.href = '/dashboard');
   backToIngestBtn.addEventListener('click', () => goToStep(1));
   backToPersonalityBtn.addEventListener('click', () => goToStep(2));
   continueToPublishBtn.addEventListener('click', () => {

@@ -1,10 +1,17 @@
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.seed import seed_test_account
+from app.core.database import get_db
+from app.core.deps import get_current_user_optional
+from app.models.business import Business
+from app.models.user import User
 from contextlib import asynccontextmanager
 
 
@@ -93,7 +100,33 @@ async def health():
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard_page():
+async def dashboard_page(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user_optional)
+):
+    """Dashboard with auth and onboarding completion checks."""
+    
+    # Check if user is authenticated
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
+    
+    # Check if user has a business associated
+    if not current_user.business_id:
+        return RedirectResponse(url="/onboarding", status_code=302)
+    
+    # Check onboarding completion
+    result = await db.execute(select(Business).where(Business.id == current_user.business_id))
+    business = result.scalar_one_or_none()
+    
+    if not business:
+        return RedirectResponse(url="/onboarding", status_code=302)
+    
+    # If onboarding not completed (step < 4), redirect to onboarding
+    if not business.onboarding_completed_at or (business.onboarding_step or 0) < 4:
+        return RedirectResponse(url="/onboarding", status_code=302)
+    
+    # User is authenticated and onboarding is complete - show dashboard
     template = TEMPLATES_DIR / "dashboard.html"
     if template.exists():
         return HTMLResponse(content=template.read_text())
