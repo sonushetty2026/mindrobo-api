@@ -234,14 +234,33 @@ async def forgot_password(data: ForgotPassword, db: AsyncSession = Depends(get_d
     user.reset_expires = reset_expires
     await db.commit()
     
-    # TODO: Send email via SendGrid (stubbed for now)
-    logger.info(
-        "🔐 PASSWORD RESET TOKEN for %s: %s (expires: %s)",
-        user.email,
-        reset_token,
-        reset_expires,
-    )
-    
+    # Send password reset email via SendGrid
+    reset_link = f"http://52.159.104.87:8000/reset-password?token={reset_token}"
+    logger.info("PASSWORD RESET TOKEN for %s: %s", user.email, reset_token)
+    try:
+        await email_service.send_email(
+            to=user.email,
+            subject="Reset your MindRobo password",
+            html_body=(
+                f'<html><body style="font-family:Arial,sans-serif;color:#333;">'  
+                f'<div style="max-width:600px;margin:0 auto;padding:20px;">'  
+                f'<h2 style="color:#4A90E2;">Reset Your Password</h2>'  
+                f'<p>Hi {user.full_name or user.email},</p>'  
+                f'<p>We received a request to reset your MindRobo password. '
+                f'Click the button below to set a new password. This link expires in 24 hours.</p>'
+                f'<a href="{reset_link}" style="display:inline-block;padding:12px 24px;'
+                f'background:#4A90E2;color:white;text-decoration:none;border-radius:5px;margin:20px 0;">'
+                f'Reset Password</a>'
+                f'<p>If you did not request this, ignore this email.</p>'
+                f'<p>Best regards,<br>The MindRobo Team</p>'
+                f'</div></body></html>'
+            ),
+            plain_text=f"Reset your MindRobo password:\n{reset_link}\n\nExpires in 24 hours. Ignore if you did not request this."
+        )
+        logger.info("Password reset email sent to %s", user.email)
+    except Exception as e:
+        logger.error("Failed to send password reset email to %s: %s", user.email, e)
+
     return {"message": "If that email exists, a password reset link has been sent."}
 
 
