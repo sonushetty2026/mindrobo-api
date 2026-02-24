@@ -155,6 +155,12 @@ async def admin_trials_page():
     return load_template("admin_trials.html")
 
 
+@app.get("/admin/usage", response_class=HTMLResponse)
+async def admin_usage_page():
+    """Serve the admin usage dashboard page."""
+    return load_template("admin_usage.html")
+
+
 @app.get("/notifications", response_class=HTMLResponse)
 async def notifications_page():
     """Serve the notifications center page."""
