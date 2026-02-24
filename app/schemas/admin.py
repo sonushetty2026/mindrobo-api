@@ -102,3 +102,110 @@ class AdminTrialExtend(BaseModel):
 class AdminTrialConvert(BaseModel):
     """Convert trial user to paid."""
     plan_id: UUID = Field(description="Subscription plan ID to assign")
+
+
+# API Usage tracking schemas (Issues #92, #93)
+class UsageSummary(BaseModel):
+    """Platform-wide API usage summary."""
+    total_spend: int = Field(description="Total platform spend in cents")
+    retell_cost: int = Field(description="Retell API cost in cents")
+    twilio_cost: int = Field(description="Twilio API cost in cents")
+    sendgrid_cost: int = Field(description="SendGrid API cost in cents")
+
+
+class UserUsage(BaseModel):
+    """Per-user usage breakdown."""
+    user_email: str
+    user_id: str
+    total_cost: int = Field(description="Total cost in cents")
+    retell_cost: int = Field(description="Retell cost in cents")
+    twilio_cost: int = Field(description="Twilio cost in cents")
+    sendgrid_cost: int = Field(description="SendGrid cost in cents")
+
+
+class UserMargin(BaseModel):
+    """Per-user margin analysis."""
+    user_email: str
+    user_id: str
+    plan_price: int = Field(description="Monthly plan price in cents")
+    total_cost: int = Field(description="Total API cost in cents")
+    margin: int = Field(description="Profit margin in cents")
+    margin_percent: float = Field(description="Margin as percentage")
+    alert: bool = Field(description="True if cost exceeds plan price")
+
+
+class DailyCostTrend(BaseModel):
+    """Daily cost trend data point."""
+    date: str = Field(description="Date in YYYY-MM-DD format")
+    total_cost: int = Field(description="Total cost for that day in cents")
+
+
+class UsageTrends(BaseModel):
+    """Cost trends over time."""
+    days: int = Field(description="Number of days of data")
+    trends: List[DailyCostTrend]
+
+
+# Audit Log schemas (Issue #94)
+class AuditLogEntry(BaseModel):
+    """Single audit log entry."""
+    id: UUID
+    admin_id: UUID
+    action: str
+    target_user_id: Optional[UUID]
+    details: Optional[dict]
+    created_at: datetime
+    admin_email: Optional[str] = None
+    target_email: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class AuditLogList(BaseModel):
+    """Paginated audit log list."""
+    logs: List[AuditLogEntry]
+    total: int
+    limit: int
+    offset: int
+
+
+# Impersonation schema (Issue #95)
+class ImpersonationResponse(BaseModel):
+    """Impersonation JWT response."""
+    access_token: str
+    token_type: str = "bearer"
+    impersonated_user_id: UUID
+    impersonated_email: str
+    expires_in: int = Field(description="Token expiry in seconds")
+
+
+# Integration Health schema (Issue #96)
+class IntegrationStatus(BaseModel):
+    """Single integration health status."""
+    status: str = Field(description="ok, not_configured, or error")
+    message: Optional[str] = None
+
+
+class HealthCheckResponse(BaseModel):
+    """Integration health check response."""
+    db: IntegrationStatus
+    retell: IntegrationStatus
+    twilio: IntegrationStatus
+    stripe: IntegrationStatus
+    sendgrid: IntegrationStatus
+
+
+# Onboarding Funnel schemas (Issue #97)
+class OnboardingStageCount(BaseModel):
+    """Count of users at each onboarding stage."""
+    stage: str
+    count: int
+    drop_off_percent: Optional[float] = None
+
+
+class OnboardingFunnelResponse(BaseModel):
+    """Onboarding funnel analytics."""
+    stages: List[OnboardingStageCount]
+    total_signups: int
+    overall_completion_rate: float

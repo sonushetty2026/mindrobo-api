@@ -88,3 +88,4 @@ def require_role(*roles: str):
 # Pre-configured role dependencies
 require_admin = require_role("admin", "superadmin")
 require_superadmin = require_role("superadmin")
+require_support = require_role("support", "admin", "superadmin")  # Support has read access
