@@ -255,7 +255,7 @@ async def forgot_password(data: ForgotPassword, db: AsyncSession = Depends(get_d
                 f'<p>Best regards,<br>The MindRobo Team</p>'
                 f'</div></body></html>'
             ),
-            plain_text=f"Reset your MindRobo password:\n{reset_link}\n\nExpires in 24 hours. Ignore if you did not request this."
+            plain_body=f"Reset your MindRobo password:\n{reset_link}\n\nExpires in 24 hours. Ignore if you did not request this."
         )
         logger.info("Password reset email sent to %s", user.email)
     except Exception as e:
