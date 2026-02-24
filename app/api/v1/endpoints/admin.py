@@ -878,3 +878,159 @@ async def get_usage_trends(
         current += timedelta(days=1)
     
     return result
+
+
+# ============================================================================
+# ISSUE #98: AUTOMATED CHURN ALERTS
+# ============================================================================
+
+@router.post("/churn-check", response_model=MessageResponse)
+async def check_churned_users(
+    current_user: User = Depends(require_superadmin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Check for users who haven't logged in for 7+ days and create admin notifications.
+    
+    This can be triggered manually or via a cron job.
+    """
+    now = datetime.utcnow()
+    seven_days_ago = now - timedelta(days=7)
+    
+    # Find users who haven't logged in for 7+ days
+    churned_users_query = await db.execute(
+        select(User).where(
+            and_(
+                User.is_active == True,
+                or_(
+                    User.last_login_at < seven_days_ago,
+                    User.last_login_at == None  # Never logged in
+                )
+            )
+        )
+    )
+    churned_users = churned_users_query.scalars().all()
+    
+    if not churned_users:
+        return MessageResponse(message="No churned users found")
+    
+    # Create notification for each churned user (sent to superadmins)
+    superadmins_query = await db.execute(
+        select(User).where(User.role == "superadmin")
+    )
+    superadmins = superadmins_query.scalars().all()
+    
+    notifications_created = 0
+    for churned_user in churned_users:
+        last_login_str = churned_user.last_login_at.strftime("%Y-%m-%d") if churned_user.last_login_at else "never"
+        message = f"User {churned_user.email} hasn't logged in for 7+ days (last login: {last_login_str})"
+        
+        for admin in superadmins:
+            await create_notification(
+                db=db,
+                user_id=admin.id,
+                title="Churn Alert",
+                message=message,
+                notification_type=NotificationType.SYSTEM,
+            )
+            notifications_created += 1
+    
+    logger.info(
+        "Churn check completed: %d churned users, %d notifications sent",
+        len(churned_users),
+        notifications_created
+    )
+    
+    return MessageResponse(
+        message=f"Found {len(churned_users)} churned users. Sent {notifications_created} notifications to admins."
+    )
+
+
+# ============================================================================
+# ISSUE #101: BRUTE FORCE PROTECTION - FAILED LOGIN LOGS
+# ============================================================================
+
+@router.get("/security/failed-logins")
+async def get_failed_logins(
+    limit: int = Query(100, ge=1, le=500),
+    current_user: User = Depends(require_superadmin),
+    db: AsyncSession = Depends(get_db)
+):
+    """List recent failed login attempts for security monitoring.
+    
+    Returns IP addresses, attempt counts, and timestamps from the brute force protection system.
+    """
+    from app.services.security_service import get_failed_login_attempts
+    
+    attempts = get_failed_login_attempts(limit=limit)
+    
+    return {
+        "failed_logins": attempts,
+        "total": len(attempts)
+    }
+
+
+# ============================================================================
+# ISSUE #103: WEBHOOK RETRY QUEUE
+# ============================================================================
+
+@router.get("/webhooks/retries")
+async def list_webhook_retries(
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    status: Optional[str] = Query(None, regex="^(pending|retrying|failed|success)$"),
+    service: Optional[str] = Query(None, regex="^(retell|twilio)$"),
+    current_user: User = Depends(require_superadmin),
+    db: AsyncSession = Depends(get_db)
+):
+    """List webhook retry attempts with filtering.
+    
+    Query params:
+    - limit: max results
+    - offset: pagination offset
+    - status: filter by status (pending|retrying|failed|success)
+    - service: filter by service (retell|twilio)
+    """
+    from app.models.webhook_retry import WebhookRetry
+    
+    query = select(WebhookRetry)
+    filters = []
+    
+    if status:
+        filters.append(WebhookRetry.status == status)
+    if service:
+        filters.append(WebhookRetry.service == service)
+    
+    if filters:
+        query = query.where(and_(*filters))
+    
+    # Get total count
+    count_query = select(func.count(WebhookRetry.id))
+    if filters:
+        count_query = count_query.where(and_(*filters))
+    
+    total_result = await db.execute(count_query)
+    total = total_result.scalar() or 0
+    
+    # Get paginated results
+    query = query.order_by(WebhookRetry.created_at.desc()).limit(limit).offset(offset)
+    result = await db.execute(query)
+    retries = result.scalars().all()
+    
+    return {
+        "retries": [
+            {
+                "id": str(r.id),
+                "service": r.service,
+                "payload": r.payload,
+                "attempts": r.attempts,
+                "last_error": r.last_error,
+                "status": r.status,
+                "created_at": r.created_at.isoformat(),
+                "updated_at": r.updated_at.isoformat(),
+            }
+            for r in retries
+        ],
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
