@@ -41,6 +41,10 @@ class Business(Base):
     subscription_status = Column(String, default="trial")  # trial, active, past_due, canceled
     is_active = Column(Boolean, default=True)
     
+    # Onboarding progress tracking
+    onboarding_step = Column(Integer, default=0, nullable=False)  # 0=not started, 1=ingested, 2=personality, 3=review, 4=published/complete
+    onboarding_completed_at = Column(DateTime, nullable=True)
+    
     # Onboarding/config fields (use JSON for SQLite compatibility, will be JSONB in Postgres)
     industry = Column(String, nullable=True)
     hours_of_operation = Column(JSON, nullable=True)  # {"mon": "9-5", "tue": "9-5", ...}

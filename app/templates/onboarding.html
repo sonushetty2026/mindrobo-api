@@ -987,6 +987,7 @@
   // Step navigation
   function goToStep(step) {
     currentStep = step;
+    saveProgress(step);
     steps.forEach(s => {
       const section = document.getElementById(`step-${s}`);
       const indicator = document.getElementById(`step-indicator-${s}`);
@@ -1032,6 +1033,45 @@
   // Initialize
   summaryBusinessEl.textContent = businessId;
   document.querySelector('.radio-option').classList.add('selected');
-</script>
+
+  // ========== ONBOARDING PROGRESS TRACKING ==========
+  async function saveProgress(step) {
+    const token = localStorage.getItem('jwt_token');
+    if (!token) return;
+    try {
+      await fetch('/api/v1/onboarding/progress/' + step, {
+        method: 'PUT',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+    } catch (e) { console.log('Progress save failed:', e); }
+  }
+
+  async function loadProgress() {
+    const token = localStorage.getItem('jwt_token');
+    if (!token) return;
+    try {
+      const res = await fetch('/api/v1/onboarding/progress', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.completed) {
+          window.location.href = '/dashboard';
+          return;
+        }
+        if (data.step > 0 && data.step <= 4) {
+          goToStep(data.step);
+          showSuccess('Welcome back! Resuming from where you left off.');
+          setTimeout(hideMessages, 3000);
+        }
+      }
+    } catch (e) { console.log('Progress load failed:', e); }
+  }
+
+  // Load progress on page load
+  loadProgress();
+  // ========== END PROGRESS TRACKING ==========
+
+  </script>
 </body>
 </html>
