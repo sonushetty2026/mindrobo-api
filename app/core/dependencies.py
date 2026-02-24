@@ -89,3 +89,25 @@ def require_role(*roles: str):
 require_admin = require_role("admin", "superadmin")
 require_superadmin = require_role("superadmin")
 require_support = require_role("support", "admin", "superadmin")  # Support has read access
+
+
+async def check_rate_limit_dependency(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> User:
+    """Dependency that checks API rate limits for the current user.
+    
+    Issue #100: Trial users limited to 50 API calls/day, paid users to 1000/day.
+    
+    Raises HTTPException 429 if rate limit exceeded.
+    Returns the user if within limits.
+    
+    Usage:
+        @router.get("/rate-limited-endpoint")
+        async def my_endpoint(user: User = Depends(check_rate_limit_dependency)):
+            ...
+    """
+    from app.services.rate_limit_service import check_api_rate_limit
+    
+    await check_api_rate_limit(db, current_user)
+    return current_user

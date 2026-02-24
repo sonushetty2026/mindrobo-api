@@ -2,7 +2,7 @@
 
 import logging
 from datetime import datetime, timedelta
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -100,16 +100,27 @@ async def register(user_data: UserRegister, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/login", response_model=Token)
-async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
+async def login(credentials: UserLogin, request: Request, db: AsyncSession = Depends(get_db)):
     """Login with email and password.
     
     Returns 403 if account is not verified.
+    Issue #101: Brute force protection - max 5 failed attempts per 15 min.
     """
     from datetime import datetime
+    from fastapi import Request
+    from app.services.security_service import check_rate_limit, record_failed_login, clear_failed_attempts
+    
+    # Check if IP is rate limited (brute force protection)
+    rate_limit_error = check_rate_limit(request)
+    if rate_limit_error:
+        raise rate_limit_error
     
     user = await authenticate_user(db, credentials.email, credentials.password)
     
     if not user:
+        # Record failed login attempt
+        record_failed_login(request, credentials.email)
+        
         raise HTTPException(
             status_code=401,
             detail="Incorrect email or password"
@@ -121,6 +132,9 @@ async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
             status_code=403,
             detail="Please verify your email first"
         )
+    
+    # Successful login - clear failed attempts for this IP
+    clear_failed_attempts(request)
     
     # Update last login timestamp
     user.last_login_at = datetime.utcnow()
