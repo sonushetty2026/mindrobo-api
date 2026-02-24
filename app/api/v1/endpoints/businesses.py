@@ -18,6 +18,7 @@ from app.schemas.business import (
     CallSettingsConfig,
     CallSettingsOut,
 )
+from app.services.business_extractor import generate_placeholder_text
 
 router = APIRouter()
 
@@ -316,3 +317,39 @@ async def get_call_settings(
         ring_timeout_seconds=int(business.ring_timeout_seconds) if business.ring_timeout_seconds else None,
         owner_phone=business.owner_phone,
     )
+
+
+@router.get("/{business_id}/extracted-metadata")
+async def get_extracted_metadata(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user_optional),
+):
+    """Get extracted business metadata from website/PDF ingestion.
+    
+    Returns the extracted data plus helpful placeholders for the personality form.
+    This allows auto-filling the personality form with scraped data.
+    """
+    # Verify user owns this business
+    if current_user and current_user.business_id != business_id:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    result = await db.execute(select(Business).where(Business.id == business_id))
+    business = result.scalar_one_or_none()
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    # Get extracted metadata (empty dict if none)
+    extracted_data = business.extracted_metadata or {}
+    
+    # Generate helpful placeholders based on extracted data
+    placeholders = generate_placeholder_text(extracted_data)
+    
+    return {
+        "extracted_data": extracted_data,
+        "placeholders": placeholders,
+        "extraction_source": business.extraction_source_url,
+        "extracted_at": business.extracted_at,
+        "has_extraction": bool(business.extracted_metadata),
+    }

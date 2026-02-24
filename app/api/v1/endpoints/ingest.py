@@ -20,6 +20,8 @@ from app.models.knowledge import KnowledgeEntry
 from app.models.business import Business
 from app.services.scraper import scrape_url
 from app.services.pdf_extractor import extract_pdf_text
+from app.services.business_extractor import extract_business_metadata
+from datetime import datetime
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -42,6 +44,7 @@ class PreviewResponse(BaseModel):
     chunks: List[ChunkOut]
     source_url: str
     title: Optional[str] = None
+    extracted_metadata: dict = {}  # Business metadata extracted from content
 
 
 class ChunkToPublish(BaseModel):
@@ -183,6 +186,18 @@ async def preview_ingest(
             detail="Either 'url' or 'pdf_file' must be provided"
         )
     
+    # Extract business metadata from content
+    extracted_metadata = extract_business_metadata(content, title or "")
+    
+    # Store extracted metadata in business record for later use
+    business.extracted_metadata = extracted_metadata
+    business.extraction_source_url = source_url
+    business.extracted_at = datetime.utcnow()
+    await db.commit()
+    await db.refresh(business)
+    
+    logger.info("Extracted business metadata: %s", extracted_metadata)
+    
     # Chunk the content
     chunks_text = _chunk_text(content)
     
@@ -207,6 +222,7 @@ async def preview_ingest(
         chunks=chunks_out,
         source_url=source_url,
         title=title,
+        extracted_metadata=extracted_metadata,
     )
 
 

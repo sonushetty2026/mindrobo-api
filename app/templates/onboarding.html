@@ -479,6 +479,22 @@
       Configure how your AI receptionist introduces your business and handles incoming calls.
     </p>
     
+    <!-- AI Knowledge Display (shows what was extracted from website/PDF) -->
+    <div id="ai-knowledge-section" style="display: none; margin-bottom: 32px;">
+      <div class="summary-card">
+        <h3 style="margin-bottom: 16px; color: #38bdf8; display: flex; align-items: center; gap: 8px;">
+          🤖 What Your AI Assistant Learned
+          <span style="font-size: 0.8rem; color: #64748b; font-weight: normal;">from <span id="extraction-source"></span></span>
+        </h3>
+        <div id="extracted-info" style="font-size: 0.9rem; color: #cbd5e1;">
+          <!-- Extracted business info will be displayed here -->
+        </div>
+        <p style="margin-top: 12px; font-size: 0.8rem; color: #64748b;">
+          💡 We've pre-filled the form below with this information. Review and adjust as needed.
+        </p>
+      </div>
+    </div>
+    
     <div class="form-group">
       <label for="business-name" class="required">Business Name</label>
       <input type="text" id="business-name" placeholder="Tampa Pool Pro">
@@ -957,6 +973,125 @@
         }
       }
     });
+    
+    // Load extracted metadata when going to Step 2 (Personality)
+    if (step === 2) {
+      loadExtractedMetadata();
+    }
+  }
+  
+  // Load extracted business metadata and auto-fill personality form
+  async function loadExtractedMetadata() {
+    if (!businessId) return;
+    
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (jwtToken) headers['Authorization'] = 'Bearer ' + jwtToken;
+      
+      const response = await fetch(`/api/v1/businesses/${businessId}/extracted-metadata`, {
+        headers
+      });
+      
+      if (!response.ok) {
+        console.log('No extracted metadata available');
+        return;
+      }
+      
+      const data = await response.json();
+      console.log('Extracted metadata:', data);
+      
+      if (data.has_extraction) {
+        // Show what the AI learned
+        displayExtractedKnowledge(data);
+        
+        // Auto-fill form fields with extracted data
+        autoFillPersonalityForm(data);
+        
+        // Update placeholders with helpful text
+        updatePlaceholders(data.placeholders);
+      }
+      
+    } catch (error) {
+      console.error('Failed to load extracted metadata:', error);
+    }
+  }
+  
+  // Display what the AI learned from the website/PDF
+  function displayExtractedKnowledge(data) {
+    const knowledgeSection = document.getElementById('ai-knowledge-section');
+    const extractedInfo = document.getElementById('extracted-info');
+    const extractionSource = document.getElementById('extraction-source');
+    
+    const extracted = data.extracted_data;
+    let infoHtml = '';
+    
+    if (extracted.business_name) {
+      infoHtml += `<div style="margin-bottom: 8px;"><strong>Business:</strong> ${extracted.business_name}</div>`;
+    }
+    
+    if (extracted.business_description) {
+      infoHtml += `<div style="margin-bottom: 8px;"><strong>What you do:</strong> ${extracted.business_description.substring(0, 150)}${extracted.business_description.length > 150 ? '...' : ''}</div>`;
+    }
+    
+    if (extracted.services_and_prices) {
+      const services = extracted.services_and_prices.split('\n').slice(0, 3); // First 3 services
+      infoHtml += `<div style="margin-bottom: 8px;"><strong>Services found:</strong><br>${services.join('<br>')}</div>`;
+    }
+    
+    if (extracted.owner_name) {
+      infoHtml += `<div style="margin-bottom: 8px;"><strong>Owner:</strong> ${extracted.owner_name}</div>`;
+    }
+    
+    if (extracted.phone) {
+      infoHtml += `<div style="margin-bottom: 8px;"><strong>Phone:</strong> ${extracted.phone}</div>`;
+    }
+    
+    if (infoHtml) {
+      extractedInfo.innerHTML = infoHtml;
+      extractionSource.textContent = data.extraction_source || 'your website';
+      knowledgeSection.style.display = 'block';
+    }
+  }
+  
+  // Auto-fill personality form with extracted data
+  function autoFillPersonalityForm(data) {
+    const extracted = data.extracted_data;
+    
+    // Only fill if field is empty (don't overwrite user edits)
+    if (extracted.business_name && !businessNameInput.value.trim()) {
+      businessNameInput.value = extracted.business_name;
+    }
+    
+    if (extracted.business_description && !businessDescriptionInput.value.trim()) {
+      businessDescriptionInput.value = extracted.business_description;
+    }
+    
+    if (extracted.services_and_prices && !servicesPricesInput.value.trim()) {
+      servicesPricesInput.value = extracted.services_and_prices;
+    }
+    
+    if (extracted.owner_name && !ownerNameInput.value.trim()) {
+      ownerNameInput.value = extracted.owner_name;
+    }
+  }
+  
+  // Update form placeholders with helpful text
+  function updatePlaceholders(placeholders) {
+    if (placeholders.business_name) {
+      businessNameInput.placeholder = placeholders.business_name;
+    }
+    
+    if (placeholders.business_description) {
+      businessDescriptionInput.placeholder = placeholders.business_description;
+    }
+    
+    if (placeholders.services_and_prices) {
+      servicesPricesInput.placeholder = placeholders.services_and_prices;
+    }
+    
+    if (placeholders.owner_name) {
+      ownerNameInput.placeholder = placeholders.owner_name;
+    }
   }
   
   // Messages

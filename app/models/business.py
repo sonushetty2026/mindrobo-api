@@ -61,6 +61,11 @@ class Business(Base):
     custom_greeting = Column(Text, nullable=True)  # auto-generated from personality
     system_prompt = Column(Text, nullable=True)  # auto-generated Retell prompt
     
+    # Extracted metadata from website/PDF ingestion (for pre-filling personality form)
+    extracted_metadata = Column(JSON, nullable=True)  # {"business_name": "...", "description": "...", etc.}
+    extraction_source_url = Column(String, nullable=True)  # URL or PDF filename that was processed
+    extracted_at = Column(DateTime, nullable=True)  # When extraction happened
+    
     # Phone setup tracking (Issue #61)
     phone_setup_type = Column(
         SQLEnum(PhoneSetupType, name="phone_setup_type_enum"),
