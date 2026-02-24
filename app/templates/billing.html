@@ -301,7 +301,34 @@
     .plan-info { flex-direction: column; align-items: flex-start; }
     th, td { padding: 12px; font-size: 0.85rem; }
   }
-</style>
+
+  .profile-menu { position: relative; }
+  .profile-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, #38bdf8, #818cf8);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-weight: 600; color: #fff; font-size: 14px;
+    transition: transform 0.2s;
+  }
+  .profile-avatar:hover { transform: scale(1.1); }
+  .profile-dropdown {
+    display: none; position: absolute; right: 0; top: 48px;
+    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    min-width: 240px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    z-index: 1000; overflow: hidden;
+  }
+  .profile-dropdown.show { display: block; }
+  .profile-header { padding: 16px; }
+  .profile-name { font-weight: 600; color: #f1f5f9; font-size: 14px; }
+  .profile-email { color: #64748b; font-size: 12px; margin-top: 2px; }
+  .profile-divider { height: 1px; background: #334155; }
+  .profile-item {
+    display: block; padding: 10px 16px; color: #cbd5e1;
+    text-decoration: none; font-size: 13px; transition: background 0.2s;
+  }
+  .profile-item:hover { background: #334155; color: #f1f5f9; }
+
+  </style>
 </head>
 <body>
 <div class="container">
@@ -312,11 +339,27 @@
       <span>Billing</span>
     </h1>
     <nav class="nav">
-      <a href="/api/v1/dashboard/" class="nav-link">Dashboard</a>
-      <a href="/api/v1/leads/" class="nav-link">Leads</a>
+      <a href="/dashboard" class="nav-link">Dashboard</a>
+      <a href="/leads" class="nav-link">Leads</a>
       <a href="/settings" class="nav-link">Settings</a>
-      <a href="/api/v1/billing/" class="nav-link active">Billing</a>
-      <a href="/logout" class="nav-link">Sign Out</a>
+      <a href="/billing" class="nav-link active">Billing</a>
+            <div class="profile-menu" id="profile-menu">
+        <div class="profile-avatar" id="profile-toggle">
+          <span id="avatar-initial">?</span>
+        </div>
+        <div class="profile-dropdown" id="profile-dropdown">
+          <div class="profile-header">
+            <div class="profile-name" id="profile-name">Loading...</div>
+            <div class="profile-email" id="profile-email"></div>
+          </div>
+          <div class="profile-divider"></div>
+          <a href="/settings" class="profile-item">⚙️ Settings</a>
+          <a href="/billing" class="profile-item">💳 Billing & Plans</a>
+          <a href="/account/sessions" class="profile-item">🔒 Active Sessions</a>
+          <div class="profile-divider"></div>
+          <a href="/logout" class="profile-item">🚪 Sign Out</a>
+        </div>
+      </div>
     </nav>
   </div>
   
@@ -570,5 +613,24 @@
   fetchBillingStatus();
   fetchPaymentHistory();
 </script>
+
+  <script>
+  (function() {
+    const toggle = document.getElementById("profile-toggle");
+    const dropdown = document.getElementById("profile-dropdown");
+    if (!toggle || !dropdown) return;
+    const name = localStorage.getItem("user_name") || "User";
+    const email = localStorage.getItem("user_email") || "";
+    const nameEl = document.getElementById("profile-name");
+    const emailEl = document.getElementById("profile-email");
+    const initEl = document.getElementById("avatar-initial");
+    if (nameEl) nameEl.textContent = name;
+    if (emailEl) emailEl.textContent = email;
+    if (initEl) initEl.textContent = (name[0] || "?").toUpperCase();
+    toggle.addEventListener("click", (e) => { e.stopPropagation(); dropdown.classList.toggle("show"); });
+    document.addEventListener("click", () => dropdown.classList.remove("show"));
+  })();
+  </script>
+
 </body>
 </html>
