@@ -27,6 +27,9 @@ class Token(BaseModel):
     business_id: UUID | None = None
     user_id: UUID | None = None
     onboarding_complete: bool = False
+    role: str | None = None
+    full_name: str | None = None
+    email: str | None = None
 
 
 class TokenData(BaseModel):
