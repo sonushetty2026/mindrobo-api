@@ -125,7 +125,7 @@ def _determine_agent_status(gh_data: dict) -> list[dict]:
             "id": "orchestrator",
             "name": "Orchestrator",
             "role": "Lead engineer — coordinates all agents, reviews architecture, routes bugs",
-            "model": "Opus",
+            "model": "Opus 4.6",
             "status": "active",
             "current_task": "Coordinating Phase 2 sprint — routing QA bugs, merging PRs",
             "branch": "—",
