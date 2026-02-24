@@ -529,21 +529,21 @@
       <label>Lead Handling Preference</label>
       <div class="radio-group">
         <label class="radio-option" id="radio-appointment">
-          <input type="radio" name="lead-handling" value="book_appointment" checked>
+          <input type="checkbox" name="lead-handling" value="book_appointment" checked>
           <div>
             <div class="radio-label">Book Appointment</div>
-            <div class="radio-description">AI will try to book directly if calendar is connected</div>
+            <div class="radio-description">AI will offer to schedule an appointment. You can connect your calendar later in Settings.</div>
           </div>
         </label>
         <label class="radio-option" id="radio-sms">
-          <input type="radio" name="lead-handling" value="send_sms">
+          <input type="checkbox" name="lead-handling" value="send_sms" checked>
           <div>
             <div class="radio-label">Send SMS to Owner</div>
             <div class="radio-description">Notify owner via text message with lead details</div>
           </div>
         </label>
         <label class="radio-option" id="radio-message">
-          <input type="radio" name="lead-handling" value="take_message">
+          <input type="checkbox" name="lead-handling" value="take_message" checked>
           <div>
             <div class="radio-label">Take a Message</div>
             <div class="radio-description">AI will collect contact info and reason for calling</div>
@@ -852,7 +852,7 @@
       business_description: description,
       services_and_prices: servicesPricesInput.value.trim(),
       owner_name: ownerNameInput.value.trim() || null,
-      lead_handling_preference: document.querySelector('input[name="lead-handling"]:checked').value
+      lead_handling_preference: Array.from(document.querySelectorAll('input[name="lead-handling"]:checked')).map(cb => cb.value).join(',')
     };
     
     savePersonalityBtn.disabled = true;
