@@ -190,3 +190,57 @@ async def test_call_simulation(
         "hours": hours_text,
         "sample_faqs": sample_faqs,
     }
+
+
+@router.get("/progress")
+async def get_onboarding_progress(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user_optional)
+):
+    """Get current user's onboarding progress."""
+    if not current_user or not current_user.business_id:
+        return {"step": 0, "completed": False}
+    
+    result = await db.execute(select(Business).where(Business.id == current_user.business_id))
+    business = result.scalar_one_or_none()
+    
+    if not business:
+        return {"step": 0, "completed": False}
+    
+    return {
+        "step": business.onboarding_step or 0,
+        "completed": business.onboarding_completed_at is not None,
+        "business_id": str(business.id),
+        "business_name": business.name,
+    }
+
+
+@router.put("/progress/{step}")
+async def save_onboarding_progress(
+    step: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user_optional)
+):
+    """Save onboarding step progress (1-4). Step 4 = complete."""
+    if not current_user or not current_user.business_id:
+        raise HTTPException(status_code=400, detail="No business associated with user")
+    
+    if step < 0 or step > 4:
+        raise HTTPException(status_code=400, detail="Step must be 0-4")
+    
+    result = await db.execute(select(Business).where(Business.id == current_user.business_id))
+    business = result.scalar_one_or_none()
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    business.onboarding_step = step
+    if step >= 4:
+        from datetime import datetime
+        business.onboarding_completed_at = datetime.utcnow()
+    
+    await db.commit()
+    
+    logger.info("Onboarding progress saved: business=%s step=%d", business.id, step)
+    
+    return {"step": step, "completed": step >= 4, "message": "Progress saved"}
