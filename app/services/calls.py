@@ -17,6 +17,7 @@ from app.services.sms import send_caller_confirmation, send_owner_summary
 from app.services.blob_storage import blob_service
 from app.services.email_service import email_service
 from app.core.trial_limits import check_trial_limit_calls
+from app.utils.usage_tracker import log_api_usage
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +108,24 @@ async def save_call(db: AsyncSession, call_data: dict, lead: dict) -> Call:
     await db.refresh(call)
     logger.info("Call saved: %s → %s", call.call_id, outcome)
     
+    # Log API usage for Retell call ($0.10 per call)
+    if agent_id:
+        business = await lookup_business(db, agent_id)
+        if business:
+            user_result = await db.execute(
+                select(User).where(User.business_id == business.id)
+            )
+            user = user_result.scalars().first()
+            if user:
+                await log_api_usage(
+                    db=db,
+                    user_id=user.id,
+                    service="retell",
+                    endpoint="call",
+                    cost_cents=10,  # $0.10 per call
+                    request_data={"call_id": call.call_id, "outcome": outcome}
+                )
+    
     # Create Lead record if we have enough information
     if outcome == "lead_captured" and call_data.get("agent_id"):
         try:
@@ -128,12 +147,19 @@ async def save_call(db: AsyncSession, call_data: dict, lead: dict) -> Call:
                 # Send email notification to owner
                 if business.owner_email:
                     try:
+                        # Get user for usage tracking
+                        user_result = await db.execute(
+                            select(User).where(User.business_id == business.id)
+                        )
+                        user = user_result.scalars().first()
                         await email_service.send_lead_notification(
                             owner_email=business.owner_email,
                             business_name=business.name,
                             lead_name=lead.get("lead_name") or "Unknown",
                             lead_phone=call_data.get("from_number", ""),
                             service_needed=lead.get("service_type"),
+                            db=db,
+                            user_id=user.id if user else None
                         )
                     except Exception as e:
                         logger.error("Failed to send lead email notification: %s", e)
@@ -143,9 +169,16 @@ async def save_call(db: AsyncSession, call_data: dict, lead: dict) -> Call:
                     try:
                         service_text = f" needs {lead.get('service_type')}" if lead.get('service_type') else ""
                         from app.services.sms import _send_sms
+                        # Get user for usage tracking
+                        user_result = await db.execute(
+                            select(User).where(User.business_id == business.id)
+                        )
+                        user = user_result.scalars().first()
                         await _send_sms(
                             to=business.owner_phone,
-                            body=f"New lead: {lead.get('lead_name') or 'Unknown'}{service_text}. Call: {call_data.get('from_number', '')}"
+                            body=f"New lead: {lead.get('lead_name') or 'Unknown'}{service_text}. Call: {call_data.get('from_number', '')}",
+                            db=db,
+                            user_id=user.id if user else None
                         )
                     except Exception as e:
                         logger.error("Failed to send lead SMS notification: %s", e)

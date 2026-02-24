@@ -15,6 +15,7 @@ from app.core.database import get_db
 from app.core.dependencies import require_superadmin
 from app.models.user import User
 from app.models.subscription_plan import SubscriptionPlan
+from app.models.api_usage_log import APIUsageLog
 from app.schemas.admin import (
     AdminAnalytics,
     AdminUserOut,
@@ -26,6 +27,11 @@ from app.schemas.admin import (
     AdminTrialExtend,
     AdminTrialConvert,
     MessageResponse,
+    UsageSummary,
+    ServiceBreakdown,
+    UserUsage,
+    UserMargin,
+    DailyCostTrend,
 )
 from app.schemas.notification import BroadcastRequest
 from app.services.notification_service import create_notification
@@ -603,3 +609,272 @@ async def broadcast_notification(
     return MessageResponse(
         message=f"Notification broadcast to {count} users"
     )
+
+
+# ============================================================================
+# ISSUE #92 & #93: API USAGE TRACKING
+# ============================================================================
+
+@router.get("/usage/summary", response_model=UsageSummary)
+async def get_usage_summary(
+    period: str = Query("month", regex="^(day|week|month)$"),
+    current_user: User = Depends(require_superadmin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get platform-wide API usage summary.
+    
+    Args:
+        period: Time period (day, week, month)
+    
+    Returns: Total spend and breakdown by service
+    """
+    now = datetime.utcnow()
+    
+    if period == "day":
+        period_start = datetime(now.year, now.month, now.day)
+    elif period == "week":
+        period_start = now - timedelta(days=7)
+    else:  # month
+        period_start = datetime(now.year, now.month, 1)
+    
+    # Get total cost and service breakdown
+    usage_query = await db.execute(
+        select(
+            APIUsageLog.service,
+            func.sum(APIUsageLog.cost_cents).label("total_cost_cents"),
+            func.count(APIUsageLog.id).label("call_count")
+        )
+        .where(APIUsageLog.created_at >= period_start)
+        .group_by(APIUsageLog.service)
+    )
+    
+    usage_results = usage_query.all()
+    
+    service_breakdown = [
+        ServiceBreakdown(
+            service=row.service,
+            total_cost_cents=int(row.total_cost_cents or 0),
+            call_count=row.call_count
+        )
+        for row in usage_results
+    ]
+    
+    total_cost = sum(s.total_cost_cents for s in service_breakdown)
+    
+    return UsageSummary(
+        total_cost_cents=total_cost,
+        service_breakdown=service_breakdown,
+        period_start=period_start,
+        period_end=now
+    )
+
+
+@router.get("/usage/per-user", response_model=list[UserUsage])
+async def get_per_user_usage(
+    period: str = Query("month", regex="^(day|week|month)$"),
+    limit: int = Query(50, ge=1, le=500),
+    current_user: User = Depends(require_superadmin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get per-user API usage breakdown.
+    
+    Args:
+        period: Time period (day, week, month)
+        limit: Max number of users to return
+    
+    Returns: List of users with their usage breakdown
+    """
+    now = datetime.utcnow()
+    
+    if period == "day":
+        period_start = datetime(now.year, now.month, now.day)
+    elif period == "week":
+        period_start = now - timedelta(days=7)
+    else:  # month
+        period_start = datetime(now.year, now.month, 1)
+    
+    # Get usage by user and service
+    usage_query = await db.execute(
+        select(
+            APIUsageLog.user_id,
+            APIUsageLog.service,
+            func.sum(APIUsageLog.cost_cents).label("total_cost_cents"),
+            func.count(APIUsageLog.id).label("call_count")
+        )
+        .where(APIUsageLog.created_at >= period_start)
+        .group_by(APIUsageLog.user_id, APIUsageLog.service)
+        .order_by(func.sum(APIUsageLog.cost_cents).desc())
+    )
+    
+    usage_results = usage_query.all()
+    
+    # Group by user
+    user_usage_map = {}
+    for row in usage_results:
+        if row.user_id not in user_usage_map:
+            user_usage_map[row.user_id] = {
+                "services": [],
+                "total": 0
+            }
+        
+        cost = int(row.total_cost_cents or 0)
+        user_usage_map[row.user_id]["services"].append(
+            ServiceBreakdown(
+                service=row.service,
+                total_cost_cents=cost,
+                call_count=row.call_count
+            )
+        )
+        user_usage_map[row.user_id]["total"] += cost
+    
+    # Get user details
+    user_ids = list(user_usage_map.keys())[:limit]
+    users_query = await db.execute(
+        select(User).where(User.id.in_(user_ids))
+    )
+    users = {u.id: u for u in users_query.scalars().all()}
+    
+    result = []
+    for user_id in sorted(user_ids, key=lambda uid: user_usage_map[uid]["total"], reverse=True):
+        user = users.get(user_id)
+        if user:
+            result.append(UserUsage(
+                user_id=user.id,
+                email=user.email,
+                full_name=user.full_name,
+                total_cost_cents=user_usage_map[user_id]["total"],
+                service_breakdown=user_usage_map[user_id]["services"]
+            ))
+    
+    return result[:limit]
+
+
+@router.get("/usage/margin", response_model=list[UserMargin])
+async def get_user_margin(
+    period: str = Query("month", regex="^(day|week|month)$"),
+    current_user: User = Depends(require_superadmin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get per-user margin analysis (plan price vs. API costs).
+    
+    Flags users whose monthly cost exceeds their plan price.
+    
+    Args:
+        period: Time period (currently always month for plan pricing)
+    
+    Returns: List of users with margin calculations
+    """
+    now = datetime.utcnow()
+    month_start = datetime(now.year, now.month, 1)
+    
+    # Get usage by user for current month
+    usage_query = await db.execute(
+        select(
+            APIUsageLog.user_id,
+            func.sum(APIUsageLog.cost_cents).label("total_cost_cents")
+        )
+        .where(APIUsageLog.created_at >= month_start)
+        .group_by(APIUsageLog.user_id)
+    )
+    
+    usage_results = {row.user_id: int(row.total_cost_cents or 0) for row in usage_query.all()}
+    
+    # Get users with their plans
+    users_query = await db.execute(
+        select(User, SubscriptionPlan)
+        .outerjoin(SubscriptionPlan, User.plan_id == SubscriptionPlan.id)
+        .where(User.id.in_(list(usage_results.keys())))
+    )
+    
+    result = []
+    for user, plan in users_query.all():
+        total_cost = usage_results.get(user.id, 0)
+        plan_price = plan.price_cents if plan else 0
+        margin = plan_price - total_cost
+        margin_pct = (margin / plan_price * 100) if plan_price > 0 else 0
+        
+        result.append(UserMargin(
+            user_id=user.id,
+            email=user.email,
+            full_name=user.full_name,
+            plan_price_cents=plan_price,
+            total_cost_cents=total_cost,
+            margin_cents=margin,
+            margin_percentage=round(margin_pct, 2),
+            is_profitable=margin >= 0,
+            period_start=month_start,
+            period_end=now
+        ))
+    
+    # Sort by margin (least profitable first)
+    result.sort(key=lambda x: x.margin_cents)
+    
+    return result
+
+
+@router.get("/usage/trends", response_model=list[DailyCostTrend])
+async def get_usage_trends(
+    days: int = Query(30, ge=1, le=90),
+    current_user: User = Depends(require_superadmin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get daily cost trends for charts (last N days).
+    
+    Args:
+        days: Number of days to include (max 90)
+    
+    Returns: Daily cost data broken down by service
+    """
+    now = datetime.utcnow()
+    start_date = now - timedelta(days=days)
+    
+    # Get daily usage by service
+    usage_query = await db.execute(
+        select(
+            func.date(APIUsageLog.created_at).label("date"),
+            APIUsageLog.service,
+            func.sum(APIUsageLog.cost_cents).label("total_cost_cents")
+        )
+        .where(APIUsageLog.created_at >= start_date)
+        .group_by(func.date(APIUsageLog.created_at), APIUsageLog.service)
+        .order_by(func.date(APIUsageLog.created_at))
+    )
+    
+    usage_results = usage_query.all()
+    
+    # Build a map of date -> {service -> cost}
+    daily_map = {}
+    for row in usage_results:
+        date_str = row.date.strftime("%Y-%m-%d")
+        if date_str not in daily_map:
+            daily_map[date_str] = {
+                "total": 0,
+                "retell": 0,
+                "twilio": 0,
+                "sendgrid": 0
+            }
+        
+        cost = int(row.total_cost_cents or 0)
+        daily_map[date_str]["total"] += cost
+        daily_map[date_str][row.service] = cost
+    
+    # Generate list for all days (fill zeros for missing days)
+    result = []
+    current = start_date.date()
+    end = now.date()
+    
+    while current <= end:
+        date_str = current.strftime("%Y-%m-%d")
+        data = daily_map.get(date_str, {"total": 0, "retell": 0, "twilio": 0, "sendgrid": 0})
+        
+        result.append(DailyCostTrend(
+            date=date_str,
+            total_cost_cents=data["total"],
+            retell_cost_cents=data.get("retell", 0),
+            twilio_cost_cents=data.get("twilio", 0),
+            sendgrid_cost_cents=data.get("sendgrid", 0)
+        ))
+        
+        current += timedelta(days=1)
+    
+    return result
