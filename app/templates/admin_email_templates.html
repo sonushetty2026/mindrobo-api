@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindRobo — Email Templates</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 24px;
+  }
+  
+  .container { max-width: 1400px; margin: 0 auto; }
+  
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  
+  h1 {
+    font-size: 2rem;
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .nav-links {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .nav-link {
+    padding: 10px 20px;
+    background: #1e293b;
+    color: #94a3b8;
+    text-decoration: none;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+  }
+  
+  .nav-link:hover {
+    background: #334155;
+    color: #e2e8f0;
+  }
+  
+  .nav-link.active {
+    background: #0ea5e9;
+    color: white;
+    border-color: #0ea5e9;
+  }
+  
+  /* Template Grid */
+  .templates-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  
+  .template-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 24px;
+    transition: box-shadow 0.2s;
+  }
+  
+  .template-card:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  }
+  
+  .template-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  
+  .template-title {
+    font-size: 1.2rem;
+    color: #e2e8f0;
+    font-weight: 600;
+  }
+  
+  .template-status {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  
+  .status-active {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+    border: 1px solid #22c55e;
+  }
+  
+  .status-draft {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+    border: 1px solid #f59e0b;
+  }
+  
+  .template-description {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  
+  .template-preview {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    font-size: 0.85rem;
+    color: #64748b;
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    font-family: 'Courier New', monospace;
+  }
+  
+  .template-actions {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .btn {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex: 1;
+  }
+  
+  .btn-primary {
+    background: #3b82f6;
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    background: #2563eb;
+  }
+  
+  .btn-secondary {
+    background: #334155;
+    color: #e2e8f0;
+  }
+  
+  .btn-secondary:hover {
+    background: #475569;
+  }
+  
+  /* Editor Modal */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+  
+  .modal.active {
+    display: flex;
+  }
+  
+  .modal-content {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 32px;
+    max-width: 900px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  
+  .modal-title {
+    font-size: 1.5rem;
+    color: #38bdf8;
+  }
+  
+  .close-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .close-btn:hover {
+    color: #e2e8f0;
+  }
+  
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .form-group label {
+    display: block;
+    color: #94a3b8;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  
+  .form-group input,
+  .form-group textarea {
+    width: 100%;
+    background: #0f172a;
+    border: 1px solid #334155;
+    color: #e2e8f0;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    outline: none;
+    font-family: inherit;
+  }
+  
+  .form-group textarea {
+    min-height: 300px;
+    font-family: 'Courier New', monospace;
+    resize: vertical;
+  }
+  
+  .form-group input:focus,
+  .form-group textarea:focus {
+    border-color: #38bdf8;
+  }
+  
+  .form-hint {
+    color: #64748b;
+    font-size: 0.85rem;
+    margin-top: 6px;
+  }
+  
+  .variables-help {
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid #38bdf8;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+  }
+  
+  .variables-help strong {
+    color: #38bdf8;
+    display: block;
+    margin-bottom: 8px;
+  }
+  
+  .variables-help code {
+    background: #0f172a;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #22c55e;
+    font-size: 0.85rem;
+  }
+  
+  .modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+  }
+  
+  .loading {
+    text-align: center;
+    padding: 40px;
+    color: #64748b;
+  }
+  
+  .success-msg {
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid #22c55e;
+    color: #22c55e;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    display: none;
+  }
+  
+  .error-msg {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid #ef4444;
+    color: #fca5a5;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    display: none;
+  }
+  
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    body { padding: 12px; }
+    h1 { font-size: 1.5rem; }
+    .templates-grid { grid-template-columns: 1fr; }
+    .modal-content { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>📧 Email Templates</h1>
+    <nav class="nav-links">
+      <a href="/admin" class="nav-link">Dashboard</a>
+      <a href="/admin/users" class="nav-link">Users</a>
+      <a href="/admin/trials" class="nav-link">Trials</a>
+      <a href="/admin/usage" class="nav-link">Usage</a>
+      <a href="/admin/audit" class="nav-link">Audit</a>
+      <a href="/admin/health-check" class="nav-link">Health</a>
+      <a href="/admin/email-templates" class="nav-link active">Email Templates</a>
+    </nav>
+  </div>
+  
+  <div id="success-msg" class="success-msg"></div>
+  <div id="error-msg" class="error-msg"></div>
+  
+  <div id="loading" class="loading">Loading templates...</div>
+  
+  <div id="templates-container" class="templates-grid" style="display: none;">
+    <!-- Populated by JavaScript -->
+  </div>
+</div>
+
+<!-- Editor Modal -->
+<div id="editor-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modal-title">Edit Template</h2>
+      <button class="close-btn" onclick="closeEditor()">&times;</button>
+    </div>
+    
+    <form id="template-form" onsubmit="saveTemplate(event)">
+      <div class="form-group">
+        <label>Template Name</label>
+        <input type="text" id="template-name" readonly disabled>
+      </div>
+      
+      <div class="form-group">
+        <label>Subject</label>
+        <input type="text" id="template-subject" required>
+        <div class="form-hint">Email subject line</div>
+      </div>
+      
+      <div class="variables-help">
+        <strong>Available Variables:</strong>
+        Use <code>{{user_name}}</code>, <code>{{business_name}}</code>, <code>{{trial_days}}</code>, <code>{{plan_name}}</code>, <code>{{amount}}</code>
+      </div>
+      
+      <div class="form-group">
+        <label>Email Body (HTML)</label>
+        <textarea id="template-body" required></textarea>
+        <div class="form-hint">HTML content with template variables</div>
+      </div>
+      
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeEditor()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Template</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// Expected API schema (to be implemented by Backend):
+// GET /api/v1/admin/email-templates
+// Response: {
+//   templates: [
+//     {
+//       id: "welcome",
+//       name: "Welcome Email",
+//       description: "Sent when user signs up",
+//       subject: "Welcome to MindRobo!",
+//       body: "<html>...</html>",
+//       status: "active" | "draft"
+//     }
+//   ]
+// }
+//
+// PUT /api/v1/admin/email-templates/{template_id}
+// Body: { subject: string, body: string }
+// Response: { message: "Template updated" }
+
+const API_BASE = '/api/v1';
+let currentToken = null;
+let templates = [];
+let editingTemplate = null;
+
+// Check authentication
+async function checkAuth() {
+  currentToken = localStorage.getItem('token');
+  if (!currentToken) {
+    window.location.href = '/login';
+    return false;
+  }
+  return true;
+}
+
+// Load templates
+async function loadTemplates() {
+  if (!await checkAuth()) return;
+  
+  try {
+    const response = await fetch(`${API_BASE}/admin/email-templates`, {
+      headers: { 'Authorization': `Bearer ${currentToken}` }
+    });
+    
+    if (response.status === 401) {
+      window.location.href = '/login';
+      return;
+    }
+    
+    if (response.status === 404) {
+      // API not implemented - show mock data
+      displayMockTemplates();
+      return;
+    }
+    
+    if (!response.ok) {
+      throw new Error('Failed to load templates');
+    }
+    
+    const data = await response.json();
+    templates = data.templates || [];
+    renderTemplates();
+    
+  } catch (error) {
+    console.error('Error loading templates:', error);
+    displayMockTemplates();
+  }
+}
+
+// Display mock templates
+function displayMockTemplates() {
+  templates = [
+    {
+      id: 'welcome',
+      name: 'Welcome Email',
+      description: 'Sent when a user signs up',
+      subject: 'Welcome to MindRobo! 🎉',
+      body: '<h1>Welcome {{user_name}}!</h1><p>Thanks for joining MindRobo. Your AI receptionist is ready.</p>',
+      status: 'active'
+    },
+    {
+      id: 'trial_started',
+      name: 'Trial Started',
+      description: 'Sent when trial begins',
+      subject: 'Your {{trial_days}}-day trial has started',
+      body: '<h1>Hi {{user_name}},</h1><p>Your free trial for {{business_name}} is now active for {{trial_days}} days.</p>',
+      status: 'active'
+    },
+    {
+      id: 'trial_ending',
+      name: 'Trial Ending Soon',
+      description: 'Sent 3 days before trial ends',
+      subject: 'Your trial ends in 3 days',
+      body: '<h1>Hi {{user_name}},</h1><p>Your trial ends soon. Upgrade to {{plan_name}} to continue.</p>',
+      status: 'active'
+    },
+    {
+      id: 'trial_expired',
+      name: 'Trial Expired',
+      description: 'Sent when trial period ends',
+      subject: 'Your trial has expired',
+      body: '<h1>Hi {{user_name}},</h1><p>Your trial for {{business_name}} has ended. Please upgrade to continue service.</p>',
+      status: 'active'
+    },
+    {
+      id: 'payment_received',
+      name: 'Payment Received',
+      description: 'Sent after successful payment',
+      subject: 'Payment received - ${{amount}}',
+      body: '<h1>Thank you {{user_name}}!</h1><p>We received your payment of ${{amount}} for {{plan_name}}.</p>',
+      status: 'active'
+    },
+    {
+      id: 'payment_failed',
+      name: 'Payment Failed',
+      description: 'Sent when payment fails',
+      subject: 'Payment failed - action required',
+      body: '<h1>Hi {{user_name}},</h1><p>We couldn\'t process your payment. Please update your payment method.</p>',
+      status: 'active'
+    }
+  ];
+  
+  renderTemplates();
+}
+
+// Render templates
+function renderTemplates() {
+  const container = document.getElementById('templates-container');
+  
+  container.innerHTML = templates.map(tpl => `
+    <div class="template-card">
+      <div class="template-header">
+        <div class="template-title">${tpl.name}</div>
+        <span class="template-status status-${tpl.status}">${tpl.status.toUpperCase()}</span>
+      </div>
+      <div class="template-description">${tpl.description}</div>
+      <div class="template-preview">Subject: ${tpl.subject}\n\n${tpl.body.substring(0, 150)}...</div>
+      <div class="template-actions">
+        <button class="btn btn-primary" onclick="openEditor('${tpl.id}')">Edit Template</button>
+        <button class="btn btn-secondary" onclick="previewTemplate('${tpl.id}')">Preview</button>
+      </div>
+    </div>
+  `).join('');
+  
+  document.getElementById('loading').style.display = 'none';
+  container.style.display = 'grid';
+}
+
+// Open editor
+function openEditor(templateId) {
+  editingTemplate = templates.find(t => t.id === templateId);
+  if (!editingTemplate) return;
+  
+  document.getElementById('modal-title').textContent = `Edit: ${editingTemplate.name}`;
+  document.getElementById('template-name').value = editingTemplate.name;
+  document.getElementById('template-subject').value = editingTemplate.subject;
+  document.getElementById('template-body').value = editingTemplate.body;
+  
+  document.getElementById('editor-modal').classList.add('active');
+}
+
+// Close editor
+function closeEditor() {
+  document.getElementById('editor-modal').classList.remove('active');
+  editingTemplate = null;
+}
+
+// Save template
+async function saveTemplate(event) {
+  event.preventDefault();
+  
+  if (!editingTemplate) return;
+  
+  const subject = document.getElementById('template-subject').value;
+  const body = document.getElementById('template-body').value;
+  
+  try {
+    const response = await fetch(`${API_BASE}/admin/email-templates/${editingTemplate.id}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${currentToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ subject, body })
+    });
+    
+    if (response.status === 404) {
+      // API not implemented - simulate success
+      editingTemplate.subject = subject;
+      editingTemplate.body = body;
+      renderTemplates();
+      closeEditor();
+      showSuccess('Template updated successfully (mock mode)');
+      return;
+    }
+    
+    if (!response.ok) {
+      throw new Error('Failed to save template');
+    }
+    
+    // Update local copy
+    editingTemplate.subject = subject;
+    editingTemplate.body = body;
+    
+    renderTemplates();
+    closeEditor();
+    showSuccess('Template updated successfully');
+    
+  } catch (error) {
+    console.error('Error saving template:', error);
+    showError('Failed to save template: ' + error.message);
+  }
+}
+
+// Preview template
+function previewTemplate(templateId) {
+  const tpl = templates.find(t => t.id === templateId);
+  if (!tpl) return;
+  
+  // Open in new window with sample data
+  const sampleData = {
+    user_name: 'John Doe',
+    business_name: 'Acme Plumbing',
+    trial_days: '14',
+    plan_name: 'Pro Plan',
+    amount: '99'
+  };
+  
+  let previewHtml = tpl.body;
+  for (const [key, value] of Object.entries(sampleData)) {
+    previewHtml = previewHtml.replace(new RegExp(`{{${key}}}`, 'g'), value);
+  }
+  
+  const win = window.open('', '_blank');
+  win.document.write(`
+    <html>
+    <head>
+      <title>Preview: ${tpl.name}</title>
+      <style>body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }</style>
+    </head>
+    <body>
+      <h3>Subject: ${tpl.subject}</h3>
+      <hr>
+      ${previewHtml}
+    </body>
+    </html>
+  `);
+}
+
+// Show messages
+function showSuccess(msg) {
+  const el = document.getElementById('success-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 3000);
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 5000);
+}
+
+// Initialize
+window.addEventListener('DOMContentLoaded', loadTemplates);
+</script>
+</body>
+</html>

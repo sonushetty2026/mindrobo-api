@@ -173,6 +173,18 @@ async def admin_health_page():
     return load_template("admin_health.html")
 
 
+@app.get("/admin/email-templates", response_class=HTMLResponse)
+async def admin_email_templates_page():
+    """Serve the admin email templates customization page."""
+    return load_template("admin_email_templates.html")
+
+
+@app.get("/account/sessions", response_class=HTMLResponse)
+async def account_sessions_page():
+    """Serve the user session management page."""
+    return load_template("account_sessions.html")
+
+
 @app.get("/notifications", response_class=HTMLResponse)
 async def notifications_page():
     """Serve the notifications center page."""

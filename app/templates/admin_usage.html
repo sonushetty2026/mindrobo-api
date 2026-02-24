@@ -261,7 +261,13 @@
 
   <!-- Per-User Table -->
   <div class="table-card">
-    <div class="chart-title">👥 Per-User Usage & Margin</div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <div class="chart-title" style="margin-bottom: 0;">👥 Per-User Usage & Margin</div>
+      <div style="display: flex; gap: 8px;">
+        <button onclick="exportUsageCSV()" style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">📥 CSV</button>
+        <button onclick="exportUsagePDF()" style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">📄 PDF</button>
+      </div>
+    </div>
     <div id="user-table-loading" class="loading">Loading user data...</div>
     <div id="user-table-error" class="error" style="display: none;"></div>
     <table id="user-table" style="display: none;">
@@ -458,6 +464,9 @@ function renderServiceBreakdown(breakdown) {
 }
 
 function renderUserTable(users) {
+  // Cache data for export
+  window.userDataCache = users;
+  
   document.getElementById('user-table-loading').style.display = 'none';
   const table = document.getElementById('user-table');
   const tbody = document.getElementById('user-table-body');
@@ -499,6 +508,95 @@ function generateLast30Days() {
     days.push(date.toISOString().split('T')[0]);
   }
   return days;
+}
+
+// ============================================================================
+// EXPORT FUNCTIONS
+// ============================================================================
+
+function exportUsageCSV() {
+  if (!window.userDataCache || userDataCache.length === 0) {
+    alert('No data to export. Please wait for data to load.');
+    return;
+  }
+  
+  // CSV headers
+  let csv = 'Email,Full Name,Total Cost,Plan Price,Margin,Margin %,Profitable\n';
+  
+  // CSV rows
+  userDataCache.forEach(user => {
+    csv += `"${user.email}","${user.full_name || ''}","$${(user.total_cost_cents / 100).toFixed(2)}","$${(user.plan_price_cents / 100).toFixed(2)}","$${(user.margin_cents / 100).toFixed(2)}","${user.margin_percentage}%","${user.is_profitable ? 'Yes' : 'No'}"\n`;
+  });
+  
+  // Download
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `usage_report_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
+
+function exportUsagePDF() {
+  if (!window.userDataCache || userDataCache.length === 0) {
+    alert('No data to export. Please wait for data to load.');
+    return;
+  }
+  
+  // Create printable content
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <html>
+    <head>
+      <title>Usage Report</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h1 { color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #f2f2f2; font-weight: bold; }
+        .profit { color: green; }
+        .loss { color: red; }
+        .meta { color: #666; font-size: 0.9em; margin-bottom: 20px; }
+      </style>
+    </head>
+    <body>
+      <h1>MindRobo Usage & Margin Report</h1>
+      <div class="meta">Generated on ${new Date().toLocaleString()}</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Full Name</th>
+            <th>Total Cost</th>
+            <th>Plan Price</th>
+            <th>Margin</th>
+            <th>Margin %</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${userDataCache.map(user => `
+            <tr>
+              <td>${user.email}</td>
+              <td>${user.full_name || '—'}</td>
+              <td>$${(user.total_cost_cents / 100).toFixed(2)}</td>
+              <td>$${(user.plan_price_cents / 100).toFixed(2)}</td>
+              <td class="${user.is_profitable ? 'profit' : 'loss'}">$${(user.margin_cents / 100).toFixed(2)}</td>
+              <td>${user.margin_percentage}%</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <script>
+        window.onload = function() {
+          window.print();
+        };
+      </script>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
 }
 
 // ============================================================================
