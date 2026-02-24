@@ -133,7 +133,7 @@ class EmailService:
                     </ul>
                     
                     <p>
-                        <a href="https://app.mindrobo.com/dashboard" 
+                        <a href="http://52.159.104.87:8000/dashboard" 
                            style="display: inline-block; padding: 12px 24px; background-color: #4A90E2; 
                                   color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
                             Go to Dashboard
@@ -162,7 +162,7 @@ class EmailService:
         - Customize your AI assistant's responses
         - Start capturing leads automatically
         
-        Visit your dashboard: https://app.mindrobo.com/dashboard
+        Visit your dashboard: http://52.159.104.87:8000/dashboard
         
         If you have any questions, feel free to reach out to our support team.
         
@@ -214,7 +214,7 @@ class EmailService:
                     </div>
                     
                     <p>
-                        <a href="https://app.mindrobo.com/leads" 
+                        <a href="http://52.159.104.87:8000/leads" 
                            style="display: inline-block; padding: 12px 24px; background-color: #4A90E2; 
                                   color: white; text-decoration: none; border-radius: 5px;">
                             View Lead Details
@@ -238,7 +238,7 @@ class EmailService:
         Phone: {lead_phone}
         {f'Service Needed: {service_needed}' if service_needed else ''}
         
-        View lead details: https://app.mindrobo.com/leads
+        View lead details: http://52.159.104.87:8000/leads
         
         This lead was automatically captured by your MindRobo AI assistant.
         """
