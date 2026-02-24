@@ -116,6 +116,15 @@ async def _scrape_with_playwright(url: str) -> str:
                 if 'moment' not in title.lower() and title != '':
                     break
 
+            # Additional wait for JavaScript-heavy sites to load content
+            await page.wait_for_timeout(3000)
+            
+            # Try to wait for common content indicators
+            try:
+                await page.wait_for_selector('main, article, .content, #content, .container, p', timeout=3000)
+            except:
+                pass  # Continue if no common content selectors found
+
             html = await page.content()
         finally:
             await browser.close()

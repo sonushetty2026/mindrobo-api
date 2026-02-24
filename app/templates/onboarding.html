@@ -702,12 +702,18 @@
   // Extract button
   extractBtn.addEventListener('click', async () => {
     hideMessages();
-    const url = websiteUrlInput.value.trim();
+    let url = websiteUrlInput.value.trim();
     const file = pdfUploadInput.files[0];
     
     if (!url && !file) {
       showError('Please enter a website URL or upload a PDF.');
       return;
+    }
+    
+    // Fix common URL format issues
+    if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+      websiteUrlInput.value = url; // Update the input to show the corrected URL
     }
     
     extractBtn.disabled = true;
@@ -757,6 +763,14 @@
       if (extractedChunks.length === 0) {
         throw new Error('No content could be extracted from this source.');
       }
+      
+      // Store the extraction response for display in Step 2
+      localStorage.setItem('extraction_data', JSON.stringify({
+        chunks: extractedChunks,
+        source_url: sourceInfo.value,
+        extracted_metadata: data.extracted_metadata || {},
+        title: data.title
+      }));
       
       goToStep(2); // Go to personality step
     } catch (error) {
@@ -982,9 +996,39 @@
   
   // Load extracted business metadata and auto-fill personality form
   async function loadExtractedMetadata() {
-    if (!businessId) return;
-    
     try {
+      // First try to get extraction data from current session
+      const extractionData = localStorage.getItem('extraction_data');
+      if (extractionData) {
+        const data = JSON.parse(extractionData);
+        console.log('Using stored extraction data:', data);
+        
+        if (data.extracted_metadata && Object.keys(data.extracted_metadata).length > 0) {
+          // Show what the AI learned
+          displayExtractedKnowledge({
+            extracted_data: data.extracted_metadata,
+            extraction_source: data.source_url || 'your website',
+            has_extraction: true
+          });
+          
+          // Auto-fill form fields with extracted data
+          autoFillPersonalityForm({
+            extracted_data: data.extracted_metadata
+          });
+          
+          // Generate and update placeholders
+          const placeholders = generatePlaceholdersFromData(data.extracted_metadata);
+          updatePlaceholders(placeholders);
+        }
+        return;
+      }
+      
+      // Fallback: try API call if we have a valid business ID
+      if (!businessId || businessId === '00000000-0000-0000-0000-000000000001') {
+        console.log('No extraction data available');
+        return;
+      }
+      
       const headers = { 'Content-Type': 'application/json' };
       if (jwtToken) headers['Authorization'] = 'Bearer ' + jwtToken;
       
@@ -993,22 +1037,17 @@
       });
       
       if (!response.ok) {
-        console.log('No extracted metadata available');
+        console.log('No extracted metadata available from API');
         return;
       }
       
-      const data = await response.json();
-      console.log('Extracted metadata:', data);
+      const apiData = await response.json();
+      console.log('Extracted metadata from API:', apiData);
       
-      if (data.has_extraction) {
-        // Show what the AI learned
-        displayExtractedKnowledge(data);
-        
-        // Auto-fill form fields with extracted data
-        autoFillPersonalityForm(data);
-        
-        // Update placeholders with helpful text
-        updatePlaceholders(data.placeholders);
+      if (apiData.has_extraction) {
+        displayExtractedKnowledge(apiData);
+        autoFillPersonalityForm(apiData);
+        updatePlaceholders(apiData.placeholders);
       }
       
     } catch (error) {
@@ -1073,6 +1112,38 @@
     if (extracted.owner_name && !ownerNameInput.value.trim()) {
       ownerNameInput.value = extracted.owner_name;
     }
+  }
+  
+  // Generate helpful placeholders from extracted data
+  function generatePlaceholdersFromData(extracted_data) {
+    const placeholders = {
+      business_name: "Enter your business name (e.g., Tampa Pool Pro, ABC Lawn Care)",
+      business_description: "Describe what your business does (e.g., We're a pool cleaning and maintenance company serving the Tampa Bay area)",
+      services_and_prices: "List your main services and prices (e.g., Pool cleaning - $150/visit, Equipment repair - $85/hr)",
+      owner_name: "Your name or business owner's name (e.g., Mike Johnson, Sarah Williams)"
+    };
+    
+    // If we extracted data, show examples based on what we found
+    if (extracted_data.business_name) {
+      placeholders.business_name = `Your business name (we found: ${extracted_data.business_name})`;
+    }
+    
+    if (extracted_data.owner_name) {
+      placeholders.owner_name = `Owner name (we found: ${extracted_data.owner_name})`;
+    }
+    
+    // Add industry-specific examples if we can detect the industry
+    const content = (extracted_data.business_description || "") + " " + (extracted_data.services_and_prices || "");
+    
+    if (/pool|swimming|chlorine|chemical/i.test(content)) {
+      placeholders.services_and_prices = "Pool cleaning - $150/visit, Equipment repair - $85/hr, Chemical balancing - included";
+    } else if (/lawn|grass|landscaping|mowing/i.test(content)) {
+      placeholders.services_and_prices = "Lawn mowing - $75/visit, Landscaping - $120/hr, Fertilization - $45/treatment";
+    } else if (/hvac|heating|cooling|air/i.test(content)) {
+      placeholders.services_and_prices = "AC repair - $150/visit, System maintenance - $200/year, Installation - $3500+";
+    }
+    
+    return placeholders;
   }
   
   // Update form placeholders with helpful text
