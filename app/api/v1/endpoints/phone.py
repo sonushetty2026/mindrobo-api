@@ -58,7 +58,6 @@ async def search_available_numbers(
     try:
         # Search for local numbers in US
         search_params = {
-            "country": "US",
             "limit": 10,
         }
         
