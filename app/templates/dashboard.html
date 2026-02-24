@@ -616,6 +616,27 @@
 </div>
 
 <script>
+  // ── Auth Guard ──────────────────────────────────────────────────────────
+  (function() {
+    var token = localStorage.getItem('jwt_token');
+    if (!token) { window.location.replace('/login'); throw new Error('redirect'); }
+  })();
+
+  // ── Authenticated fetch helper ──────────────────────────────────────────
+  function authFetch(url, options) {
+    options = options || {};
+    var token = localStorage.getItem('jwt_token');
+    options.headers = Object.assign({'Authorization': 'Bearer ' + token}, options.headers || {});
+    return fetch(url, options).then(function(r) {
+      if (r.status === 401 || r.status === 403) {
+        localStorage.removeItem('jwt_token');
+        window.location.replace('/login');
+        throw new Error('Session expired');
+      }
+      return r;
+    });
+  }
+
   // State
   let allCalls = [];
   let currentFilter = 'all';
@@ -881,7 +902,7 @@
       || localStorage.getItem('business_id') 
       || '1';
     
-    fetch(`/api/v1/leads/stats?business_id=${businessId}`)
+    authFetch(`/api/v1/leads/stats?business_id=${businessId}`)
       .then(r => r.json())
       .then(stats => {
         statLeads.textContent = stats.new_leads_today || 0;
@@ -894,7 +915,7 @@
   
   // Fetch trial status
   function fetchTrialStatus() {
-    fetch('/api/v1/users/me/trial-status')
+    authFetch('/api/v1/users/me/trial-status')
       .then(r => r.json())
       .then(data => {
         const card = document.getElementById('trial-card');
@@ -907,7 +928,11 @@
           ctaEl.innerHTML = '<a href="/api/v1/billing/" class="upgrade-cta">Upgrade Now</a>';
         } else {
           const days = data.days_remaining;
-          daysEl.textContent = `${days} days`;
+          if (days === null || days === undefined) {
+            daysEl.textContent = 'Active';
+          } else {
+            daysEl.textContent = `${days} days`;
+          }
           
           if (days > 7) {
             card.className = 'stat-card trial-green';
@@ -925,7 +950,7 @@
   
   // Fetch usage limits
   function fetchUsageLimits() {
-    fetch('/api/v1/users/me/usage-limits')
+    authFetch('/api/v1/users/me/usage-limits')
       .then(r => r.json())
       .then(data => {
         // Calls usage
@@ -967,7 +992,7 @@
   
   // Fetch notification count
   function fetchNotificationCount() {
-    fetch('/api/v1/notifications/unread-count')
+    authFetch('/api/v1/notifications/unread-count')
       .then(r => r.json())
       .then(data => {
         const count = data.count || 0;
@@ -985,7 +1010,7 @@
   
   // Fetch recent notifications (last 5)
   function fetchRecentNotifications() {
-    fetch('/api/v1/notifications/recent?limit=5')
+    authFetch('/api/v1/notifications/recent?limit=5')
       .then(r => r.json())
       .then(notifications => {
         const list = document.getElementById('notification-list');
@@ -1012,7 +1037,7 @@
   
   // Mark notification as read
   function markAsRead(notificationId) {
-    fetch(`/api/v1/notifications/${notificationId}/read`, { method: 'POST' })
+    authFetch(`/api/v1/notifications/${notificationId}/read`, { method: 'POST' })
       .then(() => {
         fetchNotificationCount();
         fetchRecentNotifications();
@@ -1024,7 +1049,7 @@
   // Mark all as read
   document.getElementById('mark-all-read').addEventListener('click', (e) => {
     e.preventDefault();
-    fetch('/api/v1/notifications/mark-all-read', { method: 'POST' })
+    authFetch('/api/v1/notifications/mark-all-read', { method: 'POST' })
       .then(() => {
         fetchNotificationCount();
         fetchRecentNotifications();
@@ -1054,12 +1079,21 @@
   });
   
   // Initial load
-  fetch('/api/v1/dashboard/recent?limit=50')
+  authFetch('/api/v1/dashboard/recent?limit=50')
     .then(r => r.json())
     .then(calls => {
       allCalls = calls;
-      filterCalls();
-    });
+      if (calls.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="empty">
+          <div class="empty-icon">📞</div>
+          <div style="margin-top:12px;font-size:16px;font-weight:500;">No calls yet</div>
+          <div style="margin-top:8px;color:#888;">Calls from your AI receptionist will appear here once your phone number is active.</div>
+        </td></tr>`;
+      } else {
+        filterCalls();
+      }
+    })
+    .catch(err => console.error('Failed to load calls:', err));
   
   // Fetch lead stats
   fetchLeadStats();

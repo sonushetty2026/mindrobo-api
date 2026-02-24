@@ -181,12 +181,17 @@ async def login(credentials: UserLogin, request: Request, db: AsyncSession = Dep
         "role": user.role
     })
     
-    logger.info("User logged in: %s (role: %s)", user.email, user.role)
+    # Check onboarding status - business is considered onboarded if industry is set
+    business = await db.get(Business, user.business_id)
+    onboarding_complete = bool(business and business.industry is not None)
+
+    logger.info("User logged in: %s (role: %s, onboarding: %s)", user.email, user.role, onboarding_complete)
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "user_id": str(user.id),
         "business_id": str(user.business_id),
+        "onboarding_complete": onboarding_complete,
     }
 
 

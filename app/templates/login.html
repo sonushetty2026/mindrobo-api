@@ -344,8 +344,8 @@ form.addEventListener('submit', async (e) => {
       if (data.user_id) {
         localStorage.setItem('user_id', data.user_id);
       }
-      // Redirect to dashboard
-      window.location.href = '/dashboard';
+      // Redirect: go to onboarding if not yet done, otherwise dashboard
+      window.location.href = data.onboarding_complete ? '/dashboard' : '/onboarding';
     } else {
       showError('password', 'Login successful but no token received');
     }

@@ -26,6 +26,7 @@ class Token(BaseModel):
     token_type: str = "bearer"
     business_id: UUID | None = None
     user_id: UUID | None = None
+    onboarding_complete: bool = False
 
 
 class TokenData(BaseModel):

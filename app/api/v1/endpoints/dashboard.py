@@ -15,7 +15,9 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, String
 from app.core.database import get_db
+from app.core.deps import get_current_user
 from app.models.call import Call
+from app.models.user import User
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -70,15 +72,21 @@ async def dashboard_ws(websocket: WebSocket):
 
 
 @router.get("/recent")
-async def recent_calls(limit: int = 50, db: AsyncSession = Depends(get_db)):
+async def recent_calls(
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """JSON endpoint for initial dashboard load with business info."""
     from app.models.business import Business
-    from sqlalchemy import join
-    
-    # Join calls with businesses to get owner info
+
+    # Scope calls to this user's business only
+    business_id_str = str(current_user.business_id)
+
     result = await db.execute(
         select(Call, Business)
         .join(Business, Call.business_id == Business.id.cast(String), isouter=True)
+        .where(Call.business_id == business_id_str)
         .order_by(Call.created_at.desc())
         .limit(limit)
     )
