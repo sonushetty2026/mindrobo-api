@@ -3,7 +3,8 @@
 Fetches a URL, extracts readable text content, and returns it
 in a format suitable for the knowledge base.
 
-Uses Playwright for Cloudflare-protected sites, falls back to httpx for simple sites.
+Uses Playwright with anti-detection for Cloudflare-protected sites,
+falls back to httpx for simple sites.
 """
 
 import logging
@@ -62,76 +63,108 @@ def _extract_from_html(html: str) -> dict:
 
 
 async def _scrape_with_httpx(url: str, timeout: float = 15.0) -> str:
-    """Try simple HTTP fetch first."""
+    """Try simple HTTP fetch first (fast path for non-protected sites)."""
     async with httpx.AsyncClient(follow_redirects=True, timeout=timeout) as client:
         resp = await client.get(url, headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9",
         })
         resp.raise_for_status()
-        return resp.text
+        html = resp.text
+        # Check if we got a Cloudflare challenge page
+        if "Just a moment" in html or "cf-mitigated" in html or "security verification" in html.lower():
+            raise ValueError("Cloudflare challenge detected")
+        return html
 
 
 async def _scrape_with_playwright(url: str) -> str:
-    """Use headless Chromium for Cloudflare-protected sites."""
+    """Use headless Chromium with anti-detection for Cloudflare-protected sites."""
     from playwright.async_api import async_playwright
-    
+
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        page = await browser.new_page()
+        browser = await p.chromium.launch(
+            headless=True,
+            args=[
+                '--disable-blink-features=AutomationControlled',
+                '--no-sandbox',
+            ]
+        )
+        context = await browser.new_context(
+            user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            viewport={'width': 1920, 'height': 1080},
+            locale='en-US',
+            timezone_id='America/Los_Angeles',
+        )
+
+        # Anti-detection: remove webdriver fingerprint
+        await context.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+            window.chrome = { runtime: {} };
+            Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+            Object.defineProperty(navigator, 'languages', {get: () => ['en-US', 'en']});
+        """)
+
+        page = await context.new_page()
         try:
-            await page.goto(url, wait_until="domcontentloaded", timeout=45000)
-            # Wait for Cloudflare challenge to complete (up to 15s)
-            for _ in range(6):
-                await page.wait_for_timeout(3000)
-                html = await page.content()
-                if "Just a moment" not in html and "security verification" not in html.lower():
+            await page.goto(url, wait_until='domcontentloaded', timeout=45000)
+
+            # Wait for Cloudflare challenge to resolve (up to 24s)
+            for _ in range(12):
+                await page.wait_for_timeout(2000)
+                title = await page.title()
+                if 'moment' not in title.lower() and title != '':
                     break
+
             html = await page.content()
         finally:
             await browser.close()
+
     return html
 
 
 async def scrape_url(url: str, timeout: float = 15.0) -> dict:
     """Fetch a URL and extract readable text content.
-    
-    Tries httpx first (fast), falls back to Playwright (handles Cloudflare).
+
+    Tries httpx first (fast), falls back to Playwright with anti-detection
+    for Cloudflare-protected sites.
     """
     html = None
-    
+
     # Try simple HTTP first
     try:
         html = await _scrape_with_httpx(url, timeout)
         logger.info("Scraped %s via httpx", url)
     except Exception as e:
         logger.info("httpx failed for %s (%s), trying Playwright...", url, str(e)[:100])
-    
-    # Fall back to Playwright for bot-protected sites
+
+    # Fall back to Playwright with anti-detection
     if html is None:
         try:
             html = await _scrape_with_playwright(url)
-            logger.info("Scraped %s via Playwright", url)
+            logger.info("Scraped %s via Playwright (anti-detection)", url)
         except Exception as e:
-            raise ValueError(f"Failed to fetch {url}: Could not load page even with browser. Error: {e}")
-    
+            raise ValueError(
+                f"Failed to fetch {url}: Could not load page. "
+                f"Please try the PDF upload option instead. Error: {e}"
+            )
+
     result = _extract_from_html(html)
     result["url"] = url
-    
+
     extracted_content = result.get("content", "")
-    
-    # Detect Cloudflare challenge page
+
+    # Detect Cloudflare challenge page (shouldn't happen with Playwright but just in case)
     if "security verification" in extracted_content.lower() or "Just a moment" in result.get("title", ""):
         raise ValueError(
-            f"This website ({url}) is protected by Cloudflare and cannot be automatically scraped. "
-            f"Please use the PDF upload option instead: save the website content as a PDF and upload it."
+            f"This website ({url}) has strong bot protection. "
+            f"Please use the PDF upload option: save the page as PDF and upload it."
         )
-    
+
     if len(extracted_content) < 50:
         raise ValueError(
             f"Could not extract enough content from {url} ({len(extracted_content)} chars). "
-            f"The page may be JavaScript-heavy. Please use the PDF upload option instead."
+            f"The page may be JavaScript-heavy. Please try the PDF upload option."
         )
-    
+
     return result
