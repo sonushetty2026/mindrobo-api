@@ -192,6 +192,9 @@ async def login(credentials: UserLogin, request: Request, db: AsyncSession = Dep
         "user_id": str(user.id),
         "business_id": str(user.business_id),
         "onboarding_complete": onboarding_complete,
+        "role": user.role,
+        "full_name": user.full_name,
+        "email": user.email,
     }
 
 
@@ -351,3 +354,21 @@ async def resend_verification(data: ResendVerification, db: AsyncSession = Depen
 async def get_me(current_user: User = Depends(get_current_user)):
     """Get current authenticated user."""
     return current_user
+
+
+@router.delete("/delete-account", response_model=MessageResponse)
+async def delete_account(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Soft delete the current user's account.
+    
+    Sets is_active=False. User cannot login after this.
+    Data is preserved for potential recovery.
+    """
+    current_user.is_active = False
+    await db.commit()
+    
+    logger.info("Account soft-deleted: %s (id: %s)", current_user.email, current_user.id)
+    
+    return {"message": "Account has been deactivated. Contact support to reactivate."}
