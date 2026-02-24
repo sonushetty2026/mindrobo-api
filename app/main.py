@@ -161,6 +161,18 @@ async def admin_usage_page():
     return load_template("admin_usage.html")
 
 
+@app.get("/admin/audit", response_class=HTMLResponse)
+async def admin_audit_page():
+    """Serve the admin audit log page."""
+    return load_template("admin_audit.html")
+
+
+@app.get("/admin/health-check", response_class=HTMLResponse)
+async def admin_health_page():
+    """Serve the admin integration health check page."""
+    return load_template("admin_health.html")
+
+
 @app.get("/notifications", response_class=HTMLResponse)
 async def notifications_page():
     """Serve the notifications center page."""
