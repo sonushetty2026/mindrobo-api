@@ -150,3 +150,68 @@ class DailyCostTrend(BaseModel):
     retell_cost_cents: int
     twilio_cost_cents: int
     sendgrid_cost_cents: int
+
+
+# Audit Log schemas (Issue #94)
+class AuditLogEntry(BaseModel):
+    """Single audit log entry."""
+    id: UUID
+    admin_id: UUID
+    action: str
+    target_user_id: Optional[UUID]
+    details: Optional[dict]
+    created_at: datetime
+    admin_email: Optional[str] = None
+    target_email: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class AuditLogList(BaseModel):
+    """Paginated audit log list."""
+    logs: List[AuditLogEntry]
+    total: int
+    limit: int
+    offset: int
+
+
+# Impersonation schema (Issue #95)
+class ImpersonationResponse(BaseModel):
+    """Impersonation JWT response."""
+    access_token: str
+    token_type: str = "bearer"
+    impersonated_user_id: UUID
+    impersonated_email: str
+    expires_in: int = Field(description="Token expiry in seconds")
+
+
+# Integration Health schema (Issue #96)
+class IntegrationStatus(BaseModel):
+    """Single integration health status."""
+    status: str = Field(description="ok, not_configured, or error")
+    message: Optional[str] = None
+
+
+class HealthCheckResponse(BaseModel):
+    """Integration health check response."""
+    db: IntegrationStatus
+    retell: IntegrationStatus
+    twilio: IntegrationStatus
+    stripe: IntegrationStatus
+    sendgrid: IntegrationStatus
+
+
+# Onboarding Funnel schemas (Issue #97)
+class OnboardingStageCount(BaseModel):
+    """Count of users at each onboarding stage."""
+    stage: str
+    count: int
+    drop_off_percent: Optional[float] = None
+
+
+class OnboardingFunnelResponse(BaseModel):
+    """Onboarding funnel analytics."""
+    stages: List[OnboardingStageCount]
+    total_signups: int
+    overall_completion_rate: float
